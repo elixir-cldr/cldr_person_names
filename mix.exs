@@ -40,6 +40,7 @@ defmodule Cldr.Lists.Mixfile do
     [
       # {:ex_cldr, "~> 2.37"},
       {:ex_cldr, path: "../cldr"},
+      {:unicode_string, "~> 1.0"},
 
       {:ex_doc, "~> 0.18", optional: true, runtime: false},
       {:jason, "~> 1.0", optional: true},

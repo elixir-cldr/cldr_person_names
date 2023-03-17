@@ -31,12 +31,12 @@ defmodule Cldr.PersonName.Backend do
 
 
         """
-        @spec to_string(PersonName.t(), PersonName.options()) ::
+        @spec to_iodata(PersonName.t(), PersonName.options()) ::
                 {:ok, String.t()} | {:error, {module(), String.t()}}
 
-        def to_string(%PersonName{} = name, options \\ []) do
-          options = Keyword.put(options, :backend, __MODULE__)
-          PersonName.to_string(name, options)
+        def to_iodata(%PersonName{} = name, options \\ []) do
+          options = Keyword.put(options, :backend, unquote(backend))
+          PersonName.to_iodata(name, options)
         end
 
         @doc """
@@ -46,9 +46,9 @@ defmodule Cldr.PersonName.Backend do
         ## Examples
 
         """
-        @spec to_string!(Cldr.PersonName.t(), Keyword.t()) :: String.t() | no_return()
-        def to_string!(list, options \\ []) do
-          case to_string(list, options) do
+        @spec to_iodata!(Cldr.PersonName.t(), Keyword.t()) :: String.t() | no_return()
+        def to_iodata!(list, options \\ []) do
+          case to_iodata(list, options) do
             {:error, {exception, message}} ->
               raise exception, message
 
@@ -58,10 +58,15 @@ defmodule Cldr.PersonName.Backend do
         end
 
         for locale_name <- Locale.Loader.known_locale_names(config) do
-          formats =
+          locale_data =
             locale_name
             |> Locale.Loader.get_locale(config)
             |> Map.get(:person_names)
+
+          formats =
+            locale_data
+            |> Map.delete(:given_first)
+            |> Map.delete(:surname_first)
             |> Cldr.Map.deep_map(fn {k, v} -> {k, Substitution.parse(v)} end, only: [:initial, :initial_sequence])
             |> Cldr.Map.deep_map(fn {type, format} ->
               format =
@@ -80,17 +85,41 @@ defmodule Cldr.PersonName.Backend do
             end, only: [:formal, :informal])
             |> Map.new()
 
+          given_order =
+            locale_data
+            |> Map.get(:given_first)
+            |> Enum.map(fn language -> {language, :given_first} end)
+
+          surname_order =
+            locale_data
+            |> Map.get(:surname_first)
+            |> Enum.map(fn language -> {language, :surname_first} end)
+
+          locale_order = Map.new(given_order ++ surname_order)
+
           def formats_for(unquote(locale_name)) do
-            {:ok, unquote(Macro.escape(formats))}
+            unquote(Macro.escape(formats))
+          end
+
+          def locale_order(unquote(locale_name)) do
+            unquote(Macro.escape(locale_order))
           end
         end
 
-        def formats_for(%Cldr.LanguageTag{language: language}) do
-          formats_for(language)
+        def formats_for(%Cldr.LanguageTag{cldr_locale_name: cldr_locale_name}) do
+          formats_for(cldr_locale_name)
         end
 
         def formats_for(locale) do
-          {:error, "No person name data"}
+          {:error, "No person name data found for #{inspect locale}"}
+        end
+
+        def locale_order(%Cldr.LanguageTag{cldr_locale_name: cldr_locale_name}) do
+          locale_order(cldr_locale_name)
+        end
+
+        def locale_order(locale) do
+          {:error, "No locale order data found for #{inspect locale}"}
         end
       end
     end
