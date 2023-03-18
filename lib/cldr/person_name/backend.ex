@@ -67,22 +67,28 @@ defmodule Cldr.PersonName.Backend do
             locale_data
             |> Map.delete(:given_first)
             |> Map.delete(:surname_first)
-            |> Cldr.Map.deep_map(fn {k, v} -> {k, Substitution.parse(v)} end, only: [:initial, :initial_sequence])
-            |> Cldr.Map.deep_map(fn {type, format} ->
-              format =
-                Enum.map(Regex.split(~r/{.*}/uU, format, trim: true, include_captures: true), fn
-                  "{" <> field ->
-                    field
-                    |> String.trim_trailing("}")
-                    |> String.split("-")
-                    |> Enum.map(&Cldr.String.underscore/1)
-                    |> Enum.map(&String.to_atom/1)
+            |> Cldr.Map.deep_map(fn {k, v} -> {k, Substitution.parse(v)} end,
+              only: [:initial, :initial_sequence]
+            )
+            |> Cldr.Map.deep_map(
+              fn {type, format} ->
+                format =
+                  Enum.map(Regex.split(~r/{.*}/uU, format, trim: true, include_captures: true), fn
+                    "{" <> field ->
+                      field
+                      |> String.trim_trailing("}")
+                      |> String.split("-")
+                      |> Enum.map(&Cldr.String.underscore/1)
+                      |> Enum.map(&String.to_atom/1)
 
-                  literal ->
-                    literal
-                end)
-              {type, format}
-            end, only: [:formal, :informal])
+                    literal ->
+                      literal
+                  end)
+
+                {type, format}
+              end,
+              only: [:formal, :informal]
+            )
             |> Map.new()
 
           given_order =
@@ -111,7 +117,7 @@ defmodule Cldr.PersonName.Backend do
         end
 
         def formats_for(locale) do
-          {:error, "No person name data found for #{inspect locale}"}
+          {:error, "No person name data found for #{inspect(locale)}"}
         end
 
         def locale_order(%Cldr.LanguageTag{cldr_locale_name: cldr_locale_name}) do
@@ -119,7 +125,7 @@ defmodule Cldr.PersonName.Backend do
         end
 
         def locale_order(locale) do
-          {:error, "No locale order data found for #{inspect locale}"}
+          {:error, "No locale order data found for #{inspect(locale)}"}
         end
       end
     end

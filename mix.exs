@@ -13,13 +13,13 @@ defmodule Cldr.Lists.Mixfile do
       source_url: "https://github.com/elixir-cldr/cldr_person_names",
       description: description(),
       package: package(),
-      start_permanent: Mix.env == :prod,
+      start_permanent: Mix.env() == :prod,
       deps: deps(),
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
         ignore_warnings: ".dialyzer_ignore_warnings",
         plt_add_apps: ~w(inets jason mix)a
-      ],
+      ]
     ]
   end
 
@@ -42,7 +42,6 @@ defmodule Cldr.Lists.Mixfile do
       {:ex_cldr, path: "../cldr"},
       {:unicode, "~> 1.16"},
       {:unicode_string, "~> 1.0"},
-
       {:ex_doc, "~> 0.18", optional: true, runtime: false},
       {:jason, "~> 1.0", optional: true},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
@@ -55,7 +54,12 @@ defmodule Cldr.Lists.Mixfile do
       licenses: ["Apache-2.0"],
       links: links(),
       files: [
-        "lib", "config", "mix.exs", "README*", "CHANGELOG*", "LICENSE*"
+        "lib",
+        "config",
+        "mix.exs",
+        "README*",
+        "CHANGELOG*",
+        "LICENSE*"
       ]
     ]
   end
@@ -73,9 +77,10 @@ defmodule Cldr.Lists.Mixfile do
 
   def links do
     %{
-      "GitHub"    => "https://github.com/elixir-cldr/cldr_person_names",
-      "Readme"    => "https://github.com/elixir-cldr/cldr_person_names/blob/v#{@version}/README.md",
-      "Changelog" => "https://github.com/elixir-cldr/cldr_person_names/blob/v#{@version}/CHANGELOG.md"
+      "GitHub" => "https://github.com/elixir-cldr/cldr_person_names",
+      "Readme" => "https://github.com/elixir-cldr/cldr_person_names/blob/v#{@version}/README.md",
+      "Changelog" =>
+        "https://github.com/elixir-cldr/cldr_person_names/blob/v#{@version}/CHANGELOG.md"
     }
   end
 

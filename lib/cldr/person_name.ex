@@ -30,7 +30,8 @@ defmodule Cldr.PersonName do
   import Kernel, except: [to_string: 1]
 
   defdelegate cldr_backend_provider(config),
-    to: Cldr.PersonName.Backend, as: :define_backend_module
+    to: Cldr.PersonName.Backend,
+    as: :define_backend_module
 
   defguardp is_initial(term) when is_list(term)
 
@@ -49,7 +50,7 @@ defmodule Cldr.PersonName do
   def to_string!(%__MODULE__{} = name, options \\ []) do
     case to_string(name, options) do
       {:ok, formatted_name} -> formatted_name
-      {:error, reason} -> raise Cldr.PersonNameError,reason
+      {:error, reason} -> raise Cldr.PersonNameError, reason
     end
   end
 
@@ -72,7 +73,7 @@ defmodule Cldr.PersonName do
   def to_iodata!(%__MODULE__{} = name, options \\ []) do
     case to_iodata(name, options) do
       {:ok, iodata} -> iodata
-      {:error, reason} -> raise Cldr.PersonNameError,reason
+      {:error, reason} -> raise Cldr.PersonNameError, reason
     end
   end
 
@@ -146,58 +147,62 @@ defmodule Cldr.PersonName do
   #
 
   defp interpolate_element(%{prefix: prefix}, [:prefix | transforms], templates)
-      when is_binary(prefix) do
+       when is_binary(prefix) do
     format_element(prefix, transforms, templates)
   end
 
   defp interpolate_element(%{title: title}, [:title | transforms], templates)
-      when is_binary(title) do
+       when is_binary(title) do
     format_element(title, transforms, templates)
   end
 
   defp interpolate_element(name, [:given, :informal | transforms], templates) do
     cond do
       name.informal_given_name ->
-        IO.inspect name.informat_given_name, label: "Informal"
+        IO.inspect(name.informat_given_name, label: "Informal")
         format_element(name.informal_given_name, transforms, templates)
 
       name.given_name ->
-        IO.inspect name.given_name, label: "Given"
+        IO.inspect(name.given_name, label: "Given")
         format_element(name.given_name, transforms, templates)
 
       true ->
-        IO.puts "NIL"
+        IO.puts("NIL")
         nil
     end
   end
 
   defp interpolate_element(%{given_name: given_name}, [:given | transforms], templates)
-      when is_binary(given_name) do
+       when is_binary(given_name) do
     format_element(given_name, transforms, templates)
   end
 
-  defp interpolate_element(%{other_given_names: other_given_names}, [:given2 | transforms], templates)
-      when is_binary(other_given_names) do
+  defp interpolate_element(
+         %{other_given_names: other_given_names},
+         [:given2 | transforms],
+         templates
+       )
+       when is_binary(other_given_names) do
     format_element(other_given_names, transforms, templates)
   end
 
   defp interpolate_element(%{surname: surname}, [:surname | transforms], templates)
-      when is_binary(surname) do
+       when is_binary(surname) do
     format_element(surname, transforms, templates)
   end
 
   defp interpolate_element(%{other_surnames: other_surnames}, [:surname2 | transforms], templates)
-      when is_binary(other_surnames) do
+       when is_binary(other_surnames) do
     format_element(other_surnames, transforms, templates)
   end
 
   defp interpolate_element(%{generation: generation}, [:generation | transforms], templates)
-      when is_binary(generation) do
+       when is_binary(generation) do
     format_element(generation, transforms, templates)
   end
 
   defp interpolate_element(%{credentials: credentials}, [:credentials | transforms], templates)
-      when is_binary(credentials) do
+       when is_binary(credentials) do
     format_element(credentials, transforms, templates)
   end
 
@@ -243,7 +248,7 @@ defmodule Cldr.PersonName do
   end
 
   defp join_initials([first, second | rest], {_initial, sequence} = templates)
-      when is_initial(first) and is_initial(second) do
+       when is_initial(first) and is_initial(second) do
     join_initials([Cldr.Substitution.substitute([first, second], sequence) | rest], templates)
   end
 
@@ -256,14 +261,15 @@ defmodule Cldr.PersonName do
   #
 
   defp validate_name(%{surname: surname, given_name: given_name} = name, locale)
-      when is_binary(surname) or is_binary(given_name) do
+       when is_binary(surname) or is_binary(given_name) do
     with {:ok, locale} <- derive_name_locale(name, locale) do
       {:ok, Map.put(name, :locale, locale)}
     end
   end
 
   defp validate_name(name) do
-    {:error, "Name requires at least one of the fields :surname and :given_name. Found #{inspect name}"}
+    {:error,
+     "Name requires at least one of the fields :surname and :given_name. Found #{inspect(name)}"}
   end
 
   @doc """
@@ -300,8 +306,7 @@ defmodule Cldr.PersonName do
       |> Map.put(:cldr_locale_name, nil)
       |> Map.put(:canonical_locale_name, nil)
 
-    locale_name =
-      Locale.locale_name_from(locale, false)
+    locale_name = Locale.locale_name_from(locale, false)
 
     with {:ok, locale} <- Locale.canonical_language_tag(locale, locale.backend),
          {:ok, locale} <- locale.backend.known_cldr_locale(locale, locale_name),
@@ -311,8 +316,7 @@ defmodule Cldr.PersonName do
   end
 
   def derive_name_locale(%{locale: nil} = name, formatting_locale) do
-    name_script =
-      dominant_script(name)
+    name_script = dominant_script(name)
 
     locale =
       name_script
@@ -369,7 +373,7 @@ defmodule Cldr.PersonName do
         {:cont, acc}
 
       {option, value}, _acc ->
-        {:halt, {:error, "Invalid value #{inspect value} for option #{inspect option}"}}
+        {:halt, {:error, "Invalid value #{inspect(value)} for option #{inspect(option)}"}}
     end)
   end
 
@@ -381,10 +385,18 @@ defmodule Cldr.PersonName do
     {:ok, formats, {initial, initial_sequence}}
   end
 
-  defp determine_name_order(name, %Cldr.LanguageTag{language: language} = locale, backend, options) do
+  defp determine_name_order(
+         name,
+         %Cldr.LanguageTag{language: language} = locale,
+         backend,
+         options
+       ) do
     backend = Module.concat(backend, PersonName)
     locale_order = backend.locale_order(locale) || backend.locale_order(:und)
-    order = options[:order] || name.preferred_order || locale_order[language] || locale_order["und"]
+
+    order =
+      options[:order] || name.preferred_order || locale_order[language] || locale_order["und"]
+
     {:ok, Keyword.put(options, :order, order)}
   end
 
@@ -393,7 +405,7 @@ defmodule Cldr.PersonName do
 
     case get_in(formats, keys) do
       nil ->
-        {:error, "No format found for options #{inspect options}"}
+        {:error, "No format found for options #{inspect(options)}"}
 
       format ->
         {:ok, format}
