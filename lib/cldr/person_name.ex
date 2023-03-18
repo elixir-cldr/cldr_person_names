@@ -340,7 +340,7 @@ defmodule Cldr.PersonName do
   end
 
   defp resolve_cldr_script_name([]) do
-    :Zzzz
+    Cldr.Validity.Script.unicode_to_subtag!(:unknown)
   end
 
   # Need to map for Unicodes name for a script (like `:latin`)
@@ -348,6 +348,11 @@ defmodule Cldr.PersonName do
   defp resolve_cldr_script_name([name]) do
     Cldr.Validity.Script.unicode_to_subtag!(name)
   end
+
+  # TODO Look up likey subtags to find the first one
+  # that is either `und-script` or `und` with script.
+  # This requires that the likely subtags are sorted
+  # lexically because we need to get the "first" match
 
   defp find_likely_locale_for_script(script) do
     Cldr.Locale.likely_subtags(:en)
