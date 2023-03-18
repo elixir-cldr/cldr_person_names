@@ -1,4 +1,4 @@
-# Cldr for People's Names
+# Cldr for Formatting Person Names
 ![Build Status](http://sweatbox.noexpectations.com.au:8080/buildStatus/icon?job=cldr_person_names)
 [![Hex.pm](https://img.shields.io/hexpm/v/ex_cldr_person_names.svg)](https://hex.pm/packages/ex_cldr_person_names)
 [![Hex.pm](https://img.shields.io/hexpm/dw/ex_cldr_person_names.svg?)](https://hex.pm/packages/ex_cldr_person_names)
@@ -6,7 +6,7 @@
 
 ## Introduction and Getting Started
 
-`ex_cldr_person_names` is an add-on library for [ex_cldr](https://hex.pm/packages/ex_cldr) that provides localisation and formatting for people's names.  It follows the [CLDR Person Names](https://www.unicode.org/reports/tr35/tr35-personNames.html) specification.
+`ex_cldr_person_names` is an add-on library for [ex_cldr](https://hex.pm/packages/ex_cldr) that provides localised formatting for people's names.  It follows the [CLDR Person Names](https://www.unicode.org/reports/tr35/tr35-personNames.html) specification.
 
 ### Configuration
 
@@ -16,8 +16,8 @@ In the following examples we assume the presence of a module called `MyApp.Cldr`
 
 ```elixir
 defmodule MyApp.Cldr do
-  use Cldr, 
-    locales: ["en", "fr"], 
+  use Cldr,
+    locales: ["en", "fr"],
     default_locale: "en",
     providers: [Cldr.PersonName]
 end
@@ -42,6 +42,12 @@ then retrieve `ex_cldr_person_names` from [hex](https://hex.pm/packages/ex_cldr_
     mix deps.get
     mix deps.compile
 
-## Public API & Examples
+## Examples
+
+### Cldr.PersonName struct
+
+### Formatting
+
+#### When the name locale differs from the formatting locale
 
 
