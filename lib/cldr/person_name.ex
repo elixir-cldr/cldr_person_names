@@ -7,17 +7,17 @@ defmodule Cldr.PersonName do
   alias Cldr.Locale
 
   @person_name [
-    locale: nil,
-    prefix: nil,
     title: nil,
     given_name: nil,
     other_given_names: nil,
     informal_given_name: nil,
+    surname_prefix: nil,
     surname: nil,
     other_surnames: nil,
     generation: nil,
     credentials: nil,
-    preferred_order: :given_first
+    preferred_order: nil,
+    locale: nil
   ]
 
   defstruct @person_name
