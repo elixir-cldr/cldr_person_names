@@ -4,11 +4,8 @@ defmodule Cldr.PersonName.TestData do
   defstruct line: nil,
             name: %Cldr.PersonName{},
             expected_result: nil,
-            order: nil,
-            format: nil,
-            usage: nil,
-            formality: nil,
-            locale: nil
+            locale: nil,
+            params: []
 
   def parse_all_locales do
     @test_data_dir
@@ -75,14 +72,15 @@ defmodule Cldr.PersonName.TestData do
       |> split_line()
       |> normalize_params()
 
-    new = %{
-      current
-      | line: test,
-        order: order,
-        format: format,
-        usage: usage,
-        formality: formality
-    }
+    params = [
+      order: order,
+      format: format,
+      usage: usage,
+      formality: formality
+    ]
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+
+    new = %{current | line: test, params: params}
 
     [new | acc]
   end
