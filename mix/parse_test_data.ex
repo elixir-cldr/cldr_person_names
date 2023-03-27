@@ -14,6 +14,7 @@ defmodule Cldr.PersonName.TestData do
     |> Enum.map(&Path.basename(&1, ".txt"))
     |> Enum.map(&parse/1)
     |> List.flatten()
+    |> Enum.reject(&is_nil(&1.line))
   end
 
   def parse(locale) do

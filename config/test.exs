@@ -6,4 +6,4 @@ config :ex_unit,
   timeout: 120_000
 
 config :ex_cldr,
-  default_backend: MyApp.Cldr
+  default_backend: AllBackend.Cldr

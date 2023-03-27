@@ -159,15 +159,12 @@ defmodule Cldr.PersonName do
   defp interpolate_element(name, [:given, :informal | transforms], templates) do
     cond do
       name.informal_given_name ->
-        IO.inspect(name.informat_given_name, label: "Informal")
         format_element(name.informal_given_name, transforms, templates)
 
       name.given_name ->
-        IO.inspect(name.given_name, label: "Given")
         format_element(name.given_name, transforms, templates)
 
       true ->
-        IO.puts("NIL")
         nil
     end
   end

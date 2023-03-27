@@ -39,7 +39,8 @@ defmodule Cldr.Lists.Mixfile do
   defp deps do
     [
       # {:ex_cldr, "~> 2.37"},
-      {:ex_cldr, path: "../cldr"},
+      {:ex_cldr, path: "../cldr43"},
+
       {:unicode, "~> 1.16"},
       {:unicode_string, "~> 1.0"},
       {:ex_doc, "~> 0.18", optional: true, runtime: false},

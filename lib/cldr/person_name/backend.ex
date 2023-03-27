@@ -116,6 +116,12 @@ defmodule Cldr.PersonName.Backend do
           formats_for(cldr_locale_name)
         end
 
+        def formats_for(locale) when is_binary(locale) do
+          with {:ok, locale} <- unquote(backend).validate_locale(locale) do
+            formats_for(locale)
+          end
+        end
+
         def formats_for(locale) do
           {:error, "No person name data found for #{inspect(locale)}"}
         end
