@@ -59,7 +59,7 @@ defmodule Cldr.PersonName do
          {:ok, options} <- validate_options(options),
          {:ok, name} <- validate_name(name),
          {:ok, name_locale} <- derive_name_locale(name, formatting_locale) |> IO.inspect(label: "Name locale"),
-         {:ok, formats, templates} <- get_formats(name_locale, backend) |> IO.inspect(label: "Formats"),
+         {:ok, formats, templates} <- formats(name_locale, backend) |> IO.inspect(label: "Formats"),
          {:ok, options} <- determine_name_order(name, name_locale, backend, options),
          {:ok, format} <- select_format(formats, options) do
       name
@@ -363,7 +363,7 @@ defmodule Cldr.PersonName do
     end)
   end
 
-  defp get_formats(locale, backend) do
+  defp formats(locale, backend) do
     backend = Module.concat(backend, PersonName)
     formats = backend.formats_for(locale) || backend.formats_for(:und)
     initial = Map.fetch!(formats, :initial)

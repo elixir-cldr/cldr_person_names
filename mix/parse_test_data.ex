@@ -1,5 +1,5 @@
 defmodule Cldr.PersonName.TestData do
-  @test_data_dir "./test/support/data/person_name_test_data"
+  @test_data_dir "./test/support/person_name_test_data"
 
   defstruct line: nil,
             name: %Cldr.PersonName{},
@@ -101,7 +101,7 @@ defmodule Cldr.PersonName.TestData do
   defp normalize_params(elems) do
     Enum.map(elems, fn
       "none" -> nil
-      other -> String.to_atom(other)
+      other -> other |> Macro.underscore() |> String.to_atom()
     end)
   end
 

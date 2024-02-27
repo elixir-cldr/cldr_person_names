@@ -38,14 +38,14 @@ defmodule Cldr.Lists.Mixfile do
 
   defp deps do
     [
-      # {:ex_cldr, "~> 2.37"},
-      {:ex_cldr, path: "../cldr43"},
+      # {:ex_cldr, "~> 2.38"},
+      {:ex_cldr, path: "../cldr", override: true},
 
       {:unicode, "~> 1.16"},
       {:unicode_string, "~> 1.0"},
       {:ex_doc, "~> 0.18", optional: true, runtime: false},
       {:jason, "~> 1.0", optional: true},
-      {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
+      {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false}
     ]
   end
 
