@@ -102,6 +102,7 @@ defmodule Cldr.PersonName.Backend do
             |> Enum.map(fn language -> {language, :surname_first} end)
 
           locale_order = Map.new(given_order ++ surname_order)
+          foreign_space_replacement = Map.get(locale_data, :foreign_space_replacement)
 
           def formats_for(unquote(locale_name)) do
             unquote(Macro.escape(formats))
@@ -109,6 +110,10 @@ defmodule Cldr.PersonName.Backend do
 
           def locale_order(unquote(locale_name)) do
             unquote(Macro.escape(locale_order))
+          end
+
+          def foreign_space_replacement(unquote(locale_name)) do
+            unquote(foreign_space_replacement)
           end
         end
 

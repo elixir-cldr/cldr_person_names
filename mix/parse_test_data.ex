@@ -59,15 +59,19 @@ defmodule Cldr.PersonName.TestData do
     [%{current | name: name} | rest]
   end
 
-  defp parse_line({_test, <<"expectedResult", _::binary>> = line}, _locale, acc) do
-    [current | rest] = acc
+  defp parse_line({_test, <<"expectedResult", _::binary>> = line}, _locale, [current | rest]) do
     [_key, value] = split_line(line)
-    [%{current | expected_result: value} | rest]
+
+    # Its nil after a reset which happens at the start of the file
+    # or when endName is found
+    if is_nil(current.expected_result) do
+      [%{current | expected_result: value} | rest]
+    else
+      [%{current | expected_result: value, params: nil}, current | rest]
+    end
   end
 
-  defp parse_line({test, <<"parameters", _::binary>> = line}, _locale, acc) do
-    [current | _rest] = acc
-
+  defp parse_line({test, <<"parameters", _::binary>> = line}, _locale, [current | rest]) do
     [_key, order, format, usage, formality] =
       line
       |> split_line()
@@ -81,9 +85,13 @@ defmodule Cldr.PersonName.TestData do
     ]
     |> Enum.reject(fn {_k, v} -> is_nil(v) end)
 
-    new = %{current | line: test, params: params}
-
-    [new | acc]
+    # Its nil when either a reset at start or endName or
+    # when a new expectedResult is found
+    if is_nil(current.params) do
+      [%{current | line: test + 1, params: params} | rest]
+    else
+      [%{current | line: test + 1, params: params}, current | rest]
+    end
   end
 
   defp reset(locale) do

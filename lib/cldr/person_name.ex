@@ -4,8 +4,6 @@ defmodule Cldr.PersonName do
 
   """
 
-  alias Cldr.Locale
-
   @person_name [
     title: nil,
     given_name: nil,
@@ -57,11 +55,12 @@ defmodule Cldr.PersonName do
   def to_iodata(%__MODULE__{} = name, options \\ []) do
     {locale, backend} = Cldr.locale_and_backend_from(options)
 
-    with {:ok, locale} <- Cldr.validate_locale(locale, backend),
-         {:ok, name} <- validate_name(name, locale),
+    with {:ok, formatting_locale} <- Cldr.validate_locale(locale, backend),
          {:ok, options} <- validate_options(options),
-         {:ok, formats, templates} <- get_formats(locale, backend),
-         {:ok, options} <- determine_name_order(name, locale, backend, options),
+         {:ok, name} <- validate_name(name),
+         {:ok, name_locale} <- derive_name_locale(name, formatting_locale) |> IO.inspect(label: "Name locale"),
+         {:ok, formats, templates} <- get_formats(name_locale, backend) |> IO.inspect(label: "Formats"),
+         {:ok, options} <- determine_name_order(name, name_locale, backend, options),
          {:ok, format} <- select_format(formats, options) do
       name
       |> interpolate_format(format, templates)
@@ -257,11 +256,9 @@ defmodule Cldr.PersonName do
   # Helpers
   #
 
-  defp validate_name(%{surname: surname, given_name: given_name} = name, locale)
+  defp validate_name(%{surname: surname, given_name: given_name} = name)
        when is_binary(surname) or is_binary(given_name) do
-    with {:ok, locale} <- derive_name_locale(name, locale) do
-      {:ok, Map.put(name, :locale, locale)}
-    end
+    {:ok,  name}
   end
 
   defp validate_name(name) do
@@ -269,60 +266,49 @@ defmodule Cldr.PersonName do
      "Name requires at least one of the fields :surname and :given_name. Found #{inspect(name)}"}
   end
 
-  @doc """
-  Construct the **name script** in the following way:
+  # Construct the **name script** in the following way:
+  #
+  # 1. Iterate through the characters of the surname, then through the given name.
+  #     1. Find the script of that character using the Script property.
+  #     2. If the script is not Common, Inherited, nor Unknown, return that script as the
+  #     **name script**
+  #
+  # 2. If nothing is found during the iteration, return Zzzz (Unknown Script)
+  #
+  # Construct the **name base language** in the following way:
+  #
+  # 1. If the PersonName object can provide a name locale, return its language.
+  #
+  # 2. Otherwise, find the maximal likely locale for the name script, using Likely Subtags,
+  #    and return its base language (first subtag).
+  #
+  # Construct the **name locale** in the following way:
+  #
+  # 1. If the PersonName object can provide a name locale, return a locale formed from it
+  #    by replacing its script by the name script.
+  #
+  # 2. Otherwise, return the locale formed from the name base language plus name script.
 
-  1. Iterate through the characters of the surname, then through the given name.
-      1. Find the script of that character using the Script property.
-      2. If the script is not Common, Inherited, nor Unknown, return that script as the
-      **name script**
-
-  2. If nothing is found during the iteration, return Zzzz (Unknown Script)
-
-  Construct the **name base language** in the following way:
-
-  1. If the PersonName object can provide a name locale, return its language.
-
-  2. Otherwise, find the maximal likely locale for the name script, using Likely Subtags,
-     and return its base language (first subtag).
-
-  Construct the **name locale** in the following way:
-
-  1. If the PersonName object can provide a name locale, return a locale formed from it
-     by replacing its script by the name script.
-
-  2. Otherwise, return the locale formed from the name base language plus name script.
-
-  """
-  def derive_name_locale(%{locale: %Cldr.LanguageTag{} = locale} = name, _formatting_locale) do
+  defp derive_name_locale(%{locale: %Cldr.LanguageTag{} = name_locale} = name, _formatting_locale) do
     name_script = dominant_script(name)
 
-    locale =
-      locale
-      |> Map.put(:script, name_script)
-      |> Map.put(:cldr_locale_name, nil)
-      |> Map.put(:canonical_locale_name, nil)
-
-    locale_name = Locale.locale_name_from(locale, false)
-
-    with {:ok, locale} <- Locale.canonical_language_tag(locale, locale.backend),
-         {:ok, locale} <- locale.backend.known_cldr_locale(locale, locale_name),
-         {:ok, locale} <- locale.backend.known_cldr_territory(locale) do
-      {:ok, locale}
+    if name_locale.script == name_script do
+      {:ok, name_locale} |> IO.inspect(label: "Using name locale with script #{inspect name_script}}")
+    else
+      locale_name = Cldr.Locale.locale_name_from(name_locale.language, name_script, name_locale.territory, [])
+      {:ok, formatting_locale} = Cldr.validate_locale(locale_name, name_locale.backend)
     end
   end
 
-  def derive_name_locale(%{locale: nil} = name, formatting_locale) do
+  defp derive_name_locale(%{locale: nil} = name, formatting_locale) do
     name_script = dominant_script(name)
+    name_locale = find_likely_locale_for_script(name_script, formatting_locale.backend)
 
-    locale =
-      name_script
-      |> find_likely_locale_for_script()
-      |> Map.put(:backend, formatting_locale.backend)
-
-    name
-    |> Map.put(:locale, locale)
-    |> derive_name_locale(formatting_locale)
+    if name_locale do
+      {:ok, name_locale}
+    else
+      {:error, "No locale resolved for script #{inspect name_script}"}
+    end
   end
 
   defp dominant_script(name) do
@@ -336,6 +322,7 @@ defmodule Cldr.PersonName do
     |> resolve_cldr_script_name()
   end
 
+  # No script found, return :unknown script
   defp resolve_cldr_script_name([]) do
     Cldr.Validity.Script.unicode_to_subtag!(:unknown)
   end
@@ -346,13 +333,10 @@ defmodule Cldr.PersonName do
     Cldr.Validity.Script.unicode_to_subtag!(name)
   end
 
-  # TODO Look up likey subtags to find the first one
-  # that is either `und-script` or `und` with script.
-  # This requires that the likely subtags are sorted
-  # lexically because we need to get the "first" match
-
-  defp find_likely_locale_for_script(script) do
-    Cldr.Locale.likely_subtags(:en)
+  defp find_likely_locale_for_script(script, backend) do
+    root_language = Cldr.Locale.root_language()
+    likely_locale = Cldr.Locale.likely_subtags(root_language, script, nil, [])
+    likely_locale && Cldr.Locale.canonical_language_tag(likely_locale, backend)
   end
 
   defp validate_options(options) do
@@ -387,17 +371,19 @@ defmodule Cldr.PersonName do
     {:ok, formats, {initial, initial_sequence}}
   end
 
-  defp determine_name_order(
-         name,
-         %Cldr.LanguageTag{language: language} = locale,
-         backend,
-         options
-       ) do
+  defp determine_name_order(name, name_locale, backend, options) do
+    language = name_locale.language
     backend = Module.concat(backend, PersonName)
-    locale_order = backend.locale_order(locale) || backend.locale_order(:und)
+    locale_order = backend.locale_order(name_locale) || backend.locale_order(:und)
+
+    IO.inspect options[:order], label: "Options order"
+    IO.inspect name.preferred_order, label: "Name preferred order"
+    IO.inspect locale_order[language], label: "Language order"
+    IO.inspect locale_order[language], label: "Und order"
 
     order =
-      options[:order] || name.preferred_order || locale_order[language] || locale_order["und"]
+      options[:order] || name.preferred_order || locale_order[language] || locale_order["und"] || @default_order
+      |> IO.inspect(label: "Name order")
 
     {:ok, Keyword.put(options, :order, order)}
   end
@@ -422,8 +408,7 @@ defmodule Cldr.PersonName do
     [
       format: @default_format,
       usage: @default_usage,
-      formality: @default_formality,
-      order: @default_order
+      formality: @default_formality
     ]
   end
 end
