@@ -60,7 +60,7 @@ defmodule Cldr.PersonName do
          {:ok, options} <- validate_options(options),
          {:ok, name} <- validate_name(name),
          {:ok, name_locale} <- derive_name_locale(name, formatting_locale),
-         {:ok, formats, templates} <- formats(name_locale, backend),
+         {:ok, formats, templates} <- formats(formatting_locale, name_locale, backend),
          {:ok, options} <- determine_name_order(name, name_locale, backend, options),
          {:ok, format} <- select_format(formats, options),
          {:ok, name, format} <- adjust_for_mononym(name, format) do
@@ -98,6 +98,7 @@ defmodule Cldr.PersonName do
     |> Enum.map(&interpolate_element(name, &1, templates))
     |> remove_leading_emptiness()
     |> remove_trailing_emptiness()
+    # |> IO.inspect(label: "Before remove empty fields")
     |> remove_empty_fields()
     |> extract_values()
   end
@@ -114,8 +115,12 @@ defmodule Cldr.PersonName do
     |> Enum.reverse()
   end
 
-  defp remove_empty_fields([{:value, element}, binary, nil | rest]) when is_binary(binary) do
-    remove_empty_fields([{:value, element} | rest])
+  defp remove_empty_fields([{:value, element}, binary | rest]) when is_binary(binary) do
+    [{:value, element}, binary | remove_empty_fields(rest)]
+  end
+
+  defp remove_empty_fields([nil, binary | rest]) when is_binary(binary) do
+    remove_empty_fields(rest)
   end
 
   defp remove_empty_fields([{:value, element}, nil | rest]) do
@@ -180,10 +185,6 @@ defmodule Cldr.PersonName do
     end)
   end
 
-  # defp interpolate_element(%{prefix: prefix}, [:prefix | transforms], templates) do
-  #   format_element(prefix, transforms, templates)
-  # end
-
   defp interpolate_element(%{title: title}, [:title | transforms], templates) do
     format_element(title, transforms, templates)
   end
@@ -213,16 +214,25 @@ defmodule Cldr.PersonName do
     format_element(surname, transforms, templates)
   end
 
+  defp interpolate_element(name, [:surname, :monogram | transforms], templates) do
+    complete_surname = format_surname(name, transforms, templates)
+
+    if complete_surname == [] do
+      nil
+    else
+      complete_surname
+      |> :erlang.iolist_to_binary()
+      |> String.first()
+      |> wrap(:value)
+    end
+  end
+
   defp interpolate_element(name, [:surname | transforms], templates) do
-    surname_prefix = format_element(name.surname_prefix, transforms, templates)
-    surname = format_element(name.surname, transforms, templates)
-    other_surnames = format_element(name.other_surnames, transforms, templates)
     space = " "
 
     complete_surname =
-      [surname_prefix, surname, other_surnames]
-      |> extract_values()
-      |> Enum.reject(&is_nil/1)
+      name
+      |> format_surname(transforms, templates)
       |> Enum.intersperse(space)
 
     if complete_surname == [] do
@@ -260,6 +270,7 @@ defmodule Cldr.PersonName do
   #
   # Formmatting transforms
   #
+
   defp format_element(nil, _transforms, _templates) do
     nil
   end
@@ -282,6 +293,16 @@ defmodule Cldr.PersonName do
         value
     end)
     |> wrap(:value)
+  end
+
+  defp format_surname(name, transforms, templates) do
+    surname_prefix = format_element(name.surname_prefix, transforms, templates)
+    surname = format_element(name.surname, transforms, templates)
+
+    [surname_prefix, surname]
+    |> extract_values()
+    |> Enum.reject(&is_nil/1)
+    # |> IO.inspect(label: "Formatted surname")
   end
 
   defp initialize_value(value, transforms, {initial_template, _initial_sequence} = templates) do
@@ -323,6 +344,10 @@ defmodule Cldr.PersonName do
     [element | list]
   end
 
+  #
+  # Helpers
+  #
+
   # Join multiple initials together when there is more
   # than one.
 
@@ -343,10 +368,6 @@ defmodule Cldr.PersonName do
     [first | join_initials(rest, templates)]
   end
 
-  #
-  # Helpers
-  #
-
   defp validate_name(%{surname: surname, given_name: given_name} = name)
        when is_binary(surname) or is_binary(given_name) do
     {:ok,  name}
@@ -357,39 +378,64 @@ defmodule Cldr.PersonName do
      "Name requires at least one of the fields :surname and :given_name. Found #{inspect(name)}"}
   end
 
-  # Construct the **name script** in the following way:
+  # Derive the name locale
   #
-  # 1. Iterate through the characters of the surname, then through the given name.
-  #     1. Find the script of that character using the Script property.
-  #     2. If the script is not Common, Inherited, nor Unknown, return that script as the
-  #     **name script**
+  # Construct the name script in the following way.
   #
-  # 2. If nothing is found during the iteration, return Zzzz (Unknown Script)
+  # Iterate through the characters of the surname, then through the given name.
+  # Find the script of that character using the Script property.
+  # If the script is not Common, Inherited, nor Unknown, return that script as the name script
+  # If nothing is found during the iteration, return Zzzz (Unknown Script)
+  # Construct the name base language in the following way.
   #
-  # Construct the **name base language** in the following way:
+  # If the PersonName object can provide a name locale, return its language.
+  # Otherwise, find the maximal likely locale for the name script and return its base language (first subtag).
+  # Construct the name locale in the following way:
   #
-  # 1. If the PersonName object can provide a name locale, return its language.
+  # If the PersonName object can provide a name locale, return a locale formed from it by replacing its script by the name script.
+  # Otherwise, return the locale formed from the name base language plus name script.
+  # Construct the name ordering locale in the following way:
   #
-  # 2. Otherwise, find the maximal likely locale for the name script, using Likely Subtags,
-  #    and return its base language (first subtag).
-  #
-  # Construct the **name locale** in the following way:
-  #
-  # 1. If the PersonName object can provide a name locale, return a locale formed from it
-  #    by replacing its script by the name script.
-  #
-  # 2. Otherwise, return the locale formed from the name base language plus name script.
+  # If the PersonName object can provide a name locale, return it.
+  # Otherwise, return the maximal likely locale for “und-” + name script.
 
   defp derive_name_locale(%{locale: %Cldr.LanguageTag{} = name_locale} = name, _formatting_locale) do
     name_script = dominant_script(name)
 
     if name_locale.script == name_script do
-      {:ok, name_locale} # |> IO.inspect(label: "Using name locale with script #{inspect name_script}}")
+      {:ok, name_locale}
     else
       locale_name = Cldr.Locale.locale_name_from(name_locale.language, name_script, name_locale.territory, [])
-      {:ok, formatting_locale} = Cldr.validate_locale(locale_name, name_locale.backend)
+      Cldr.validate_locale(locale_name, name_locale.backend)
     end
+    # |> IO.inspect(label: "Name locale")
   end
+
+  # Derive the formatting locale
+  #
+  #  Let the full formatting locale be the maximal likely locale for the formatter's locale. The formatting base language is the base language
+  #  (first subtag) of the full formatting locale, and the formatting script is the script code of the full formatting locale.
+  #
+  #  Switch the formatting locale if necessary
+  #
+  #  A few script values represent a set of scripts, such as Jpan = {Hani, Kana, Hira}. Two script codes are said to match when they are either
+  #  identical, or one represents a set which contains the other, or they both represent sets which intersect. For example, Hani and Jpan
+  #  match, because {Hani, Kana, Hira} contains Hani.
+  #
+  #  If the name script doesn't match the formatting script:
+  #
+  #    If the name locale has name formatting data, then set the formatting locale to the name locale.
+  #    Otherwise, set the formatting locale to the maximal likely locale for the the locale formed from und, plus the name script plus the
+  #    region of the nameLocale.
+  #
+  #    For example, when a Hindi (Devanagari) formatter is called upon to format a name object that has the locale Ukrainian (Cyrillic):
+  #
+  #    If the name is written with Cyrillic letters, under the covers a Ukrainian (Cyrillic) formatter should be instantiated and used to
+  #    format that name.
+  #
+  #  If the name is written in Greek letters, then under the covers a Greek (Greek-script) formatter should be instantiated and used to format.
+  #  To determine whether there is name formatting data for a locale, get the values for each of the following paths. If at least one of them
+  #  doesn’t inherit their value from root, then the locale has name formatting data.
 
   defp derive_name_locale(%{locale: nil} = name, formatting_locale) do
     name_script = dominant_script(name)
@@ -454,9 +500,10 @@ defmodule Cldr.PersonName do
     end)
   end
 
-  defp formats(locale, backend) do
+  defp formats(formatting_locale, _name_locale, backend) do
+    # IO.inspect formatting_locale, label: "Formatting locale"
     backend = Module.concat(backend, PersonName)
-    formats = backend.formats_for(locale) || backend.formats_for(:und)
+    formats = backend.formats_for(formatting_locale) || backend.formats_for(:und)
     initial = Map.fetch!(formats, :initial)
     initial_sequence = Map.fetch!(formats, :initial_sequence)
     {:ok, formats, {initial, initial_sequence}}
@@ -487,9 +534,9 @@ defmodule Cldr.PersonName do
         {:error, "No format found for options #{inspect(options)}"}
 
       format ->
+        # IO.inspect format, label: inspect(keys)
         {:ok, format}
     end
-    # |> IO.inspect(label: "Format")
   end
 
   defp wrap(term, atom) do

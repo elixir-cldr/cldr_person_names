@@ -1,4 +1,6 @@
 defmodule Cldr.PersonName.TestData do
+  @moduledoc false
+
   @test_data_dir "./test/support/person_name_test_data"
 
   defstruct line: nil,
@@ -12,12 +14,20 @@ defmodule Cldr.PersonName.TestData do
     |> Path.join("/*.txt")
     |> Path.wildcard()
     |> Enum.map(&Path.basename(&1, ".txt"))
-    |> Enum.map(&parse/1)
+    |> Enum.map(&parse_locale/1)
     |> List.flatten()
     |> Enum.reject(&is_nil(&1.line))
   end
 
-  def parse(locale) do
+  def parse_locales([first | rest]) do
+    parse_locale(first) ++ parse_locales(rest)
+  end
+
+  def parse_locales([]) do
+    []
+  end
+
+  def parse_locale(locale) do
     with {:ok, data} <- File.read(Path.join(@test_data_dir, "/#{locale}.txt")) do
       data
       |> String.split("\n")

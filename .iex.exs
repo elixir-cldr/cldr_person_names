@@ -7,6 +7,10 @@ import Cldr.LanguageTag.Sigil, only: :macros
 {:ok, en_aq} = Cldr.validate_locale("en-AQ", MyApp.Cldr)
 {:ok, ja_aq} = Cldr.validate_locale("ja-AQ", MyApp.Cldr)
 {:ok, fr_aq} = Cldr.validate_locale("fr-AQ", MyApp.Cldr)
+{:ok, de_aq} = Cldr.validate_locale("de-AQ", MyApp.Cldr)
+{:ok, ko_aq} = Cldr.validate_locale("ko-AQ", MyApp.Cldr)
+{:ok, es_aq} = Cldr.validate_locale("es-AQ", MyApp.Cldr)
+{:ok, de} = Cldr.validate_locale("de", MyApp.Cldr)
 
 # name ; given; Mary Sue
 # name ; given2; Hamish
@@ -63,3 +67,69 @@ jn = %PersonName{
 # name ; locale; fr_AQ
 
 adele = %PersonName{given_name: "Adèle", locale: fr_aq}
+
+# nativeG
+# name ; given; Iris
+# name l surnameL Falke
+# name ; locale; de
+
+iris = %PersonName{given_name: "Iris", surname: "Falke", locale: de}
+
+# nativeFull
+# name ; title; Dr.
+# name ; given; Paul
+# name ; given-informal; Pauli
+# name ; given2; Vinzent
+# name ; surname-prefix; von
+# name ; surname-core; Fischer
+# name ; generation; jr.
+# name ; credentials; MdB
+# name ; locale; de_AQ
+
+paul = %PersonName{
+  title: "Dr.",
+  given_name: "Paul",
+  informal_given_name: "Pauli",
+  other_given_names: "Vinzent",
+  surname_prefix: "von",
+  surname: "Fischer",
+  generation: "jr.",
+  credentials: "MdB",
+  locale: de_aq
+}
+
+# foreignGS
+# name ; given; Adélaïde
+# name ; surname; Lemaître
+# name ; locale; ko_AQ
+
+adelaide = %PersonName{given_name: "Adélaïde", surname: "Lemaître", locale: ko_aq}
+
+# nativeFull
+# name ; title; Sr.
+# name ; given; Miguel Ángel
+# name ; given-informal; Migue
+# name ; given2; Juan Antonio
+# name ; surname-core; Pablo
+# name ; surname2; Pérez
+# name ; generation; II
+# name ; locale; es_AQ
+
+pablo = %PersonName{
+  title: "Sr.",
+  given_name: "Miguel Ángel",
+  informal_given_name: "Migue",
+  other_given_names: "Juan Antonio",
+  surname: "Pablo",
+  other_surnames: "Pérez",
+  generation: "II",
+  locale: es_aq
+}
+
+# name ; given; Rosa
+# name ; given2; María
+# name ; surname; Ruiz
+# name ; locale; es_AQ
+
+rosa = %PersonName{given_name: "Rosa", other_given_names: "María", surname: "Ruiz", locale: es_aq}
+
