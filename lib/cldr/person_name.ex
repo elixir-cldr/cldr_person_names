@@ -27,9 +27,10 @@ defmodule Cldr.PersonName do
 
   import Kernel, except: [to_string: 1]
 
-  defdelegate cldr_backend_provider(config),
-    to: Cldr.PersonName.Backend,
-    as: :define_backend_module
+  @doc false
+  def cldr_backend_provider(config) do
+    Cldr.PersonName.Backend.define_backend_module(config)
+  end
 
   defguardp is_initial(term) when is_list(term)
 
@@ -58,10 +59,11 @@ defmodule Cldr.PersonName do
     with {:ok, formatting_locale} <- Cldr.validate_locale(locale, backend),
          {:ok, options} <- validate_options(options),
          {:ok, name} <- validate_name(name),
-         {:ok, name_locale} <- derive_name_locale(name, formatting_locale) |> IO.inspect(label: "Name locale"),
-         {:ok, formats, templates} <- formats(name_locale, backend) |> IO.inspect(label: "Formats"),
+         {:ok, name_locale} <- derive_name_locale(name, formatting_locale),
+         {:ok, formats, templates} <- formats(name_locale, backend),
          {:ok, options} <- determine_name_order(name, name_locale, backend, options),
-         {:ok, format} <- select_format(formats, options) do
+         {:ok, format} <- select_format(formats, options),
+         {:ok, name, format} <- adjust_for_mononym(name, format) do
       name
       |> interpolate_format(format, templates)
       |> join_initials(templates)
@@ -79,97 +81,118 @@ defmodule Cldr.PersonName do
   #
   # Interpolate the format
   #
+  # If one or more fields at the start of the pattern are empty, all fields and literal text before the first populated field are omitted.
+  # If one or more fields at the end of the pattern are empty, all fields and literal text after the last populated field are omitted.
+  # Processing from the start of the remaining pattern:
+  #   If there are two or more empty fields separated only by literals, the fields and the literals between them are removed.
+  #   If there is a single empty field, it is removed.
+  #   If the processing from step 3 results in two adjacent literals (call them A and B), they are coalesced into one literal as follows:
+  #   If either is empty the result is the other one.
+  #   If B matches the end of A, then the result is A. So xyz + yz ⇒ xyz, and xyz + xyz ⇒ xyz.
+  #   Otherwise the result is A + B, further modified by replacing any sequence of two or more white space characters by the first whitespace character.
 
-  defp interpolate_format(name, [first], templates) do
-    if formatted_first = interpolate_element(name, first, templates) do
-      [formatted_first]
-    else
-      []
-    end
+  # The start of the list is an empty element followed by a binary. In which case
+  # we omit both of them.
+  defp interpolate_format(name, elements, templates) do
+    elements
+    |> Enum.map(&interpolate_element(name, &1, templates))
+    |> remove_leading_emptiness()
+    |> remove_trailing_emptiness()
+    |> remove_empty_fields()
+    |> extract_values()
   end
 
-  # Omit any leading whitespace if the last field isn't
-  # available
-  defp interpolate_format(name, [literal, last], templates) when is_binary(literal) do
-    formatted_last = interpolate_element(name, last, templates)
+  defp remove_leading_emptiness([nil, element | rest]) when is_binary(element), do: remove_leading_emptiness(rest)
+  defp remove_leading_emptiness([element, nil | rest]) when is_binary(element), do: remove_leading_emptiness(rest)
+  defp remove_leading_emptiness([nil | rest]), do: remove_leading_emptiness(rest)
+  defp remove_leading_emptiness(rest), do: rest
 
-    if length(formatted_last) > 0 do
-      [literal | formatted_last]
-    else
-      []
-    end
+  defp remove_trailing_emptiness(elements) do
+    elements
+    |> Enum.reverse()
+    |> remove_leading_emptiness()
+    |> Enum.reverse()
   end
 
-  # Two elements separated by a string (typically whitespace). Only include the string
-  # if both elements return a format.
-  defp interpolate_format(name, [first, literal | rest], templates) when is_binary(literal) do
-    formatted_rest = interpolate_format(name, rest, templates)
-    formatted_first = interpolate_element(name, first, templates)
-
-    cond do
-      formatted_first && length(formatted_rest) > 0 ->
-        [formatted_first, literal | formatted_rest]
-
-      formatted_first ->
-        [formatted_first]
-
-      length(formatted_rest) > 0 ->
-        formatted_rest
-
-      true ->
-        []
-    end
+  defp remove_empty_fields([{:value, element}, binary, nil | rest]) when is_binary(binary) do
+    remove_empty_fields([{:value, element} | rest])
   end
 
-  # Two elements not separated by whitespace (like monograms)
-  defp interpolate_format(name, [first | rest], templates) do
-    formatted_rest = interpolate_format(name, rest, templates)
-    formatted_first = interpolate_element(name, first, templates)
+  defp remove_empty_fields([{:value, element}, nil | rest]) do
+    remove_empty_fields([{:value, element} | rest])
+  end
 
-    cond do
-      formatted_first && length(formatted_rest) > 0 ->
-        [formatted_first | formatted_rest]
+  defp remove_empty_fields([first | rest]) do
+    [first | remove_empty_fields(rest)]
+  end
 
-      formatted_first ->
-        [formatted_first]
+  defp remove_empty_fields([]) do
+    []
+  end
 
-      length(formatted_rest) > 0 ->
-        formatted_rest
-
-      true ->
-        []
-    end
+  defp extract_values(elements) do
+    Enum.map(elements, fn
+      {:value, element} -> element
+      other -> other
+    end)
   end
 
   #
   # Format each element
   #
 
-  defp interpolate_element(%{prefix: prefix}, [:prefix | transforms], templates)
-       when is_binary(prefix) do
-    format_element(prefix, transforms, templates)
+  # Handle missing surname
+  #
+  # All PersonName objects will have a given name (for mononyms the given name is used). However, there may not be a surname. In that case, the following process is followed so that formatted patterns produce reasonable results.
+  # If there is no surname from a PersonName P1 and the pattern either doesn't include the given name or only shows an initial for the given name, then:
+  #   Construct and use a derived PersonName P2, whereby P2 behaves exactly as P1 except that:
+  #   Any request for a surname field (with any modifiers) returns P1's given name (with the same modifiers)
+  #   Any request for a given name field (with any modifiers) returns "" (empty string)
+
+  def adjust_for_mononym(%{surname: surname} = name, format) when is_binary(surname) do
+    {:ok, name, format}
   end
 
-  defp interpolate_element(%{title: title}, [:title | transforms], templates)
-       when is_binary(title) do
+  def adjust_for_mononym(name, format) do
+    if format_has_full_given_name?(format) do
+      {:ok, name, format}
+    else
+      name = move_given_to_surname(name)
+      format = force_given_name_to_binary(format)
+      {:ok, name, format}
+    end
+  end
+
+  defp format_has_full_given_name?(format) do
+    Enum.any?(format, &(is_list(&1) && (hd(&1) == :given) && (:initial not in &1)))
+  end
+
+  defp move_given_to_surname(name) do
+    name
+    |> Map.put(:surname, name.given_name)
+    |> Map.put(:given_name, nil)
+  end
+
+  defp force_given_name_to_binary(format) do
+    Enum.map(format, fn
+      [:given_name | _rest] -> ""
+      other -> other
+    end)
+  end
+
+  # defp interpolate_element(%{prefix: prefix}, [:prefix | transforms], templates) do
+  #   format_element(prefix, transforms, templates)
+  # end
+
+  defp interpolate_element(%{title: title}, [:title | transforms], templates) do
     format_element(title, transforms, templates)
   end
 
   defp interpolate_element(name, [:given, :informal | transforms], templates) do
-    cond do
-      name.informal_given_name ->
-        format_element(name.informal_given_name, transforms, templates)
-
-      name.given_name ->
-        format_element(name.given_name, transforms, templates)
-
-      true ->
-        nil
-    end
+    format_element(name.informal_given_name || name.given_name, transforms, templates)
   end
 
-  defp interpolate_element(%{given_name: given_name}, [:given | transforms], templates)
-       when is_binary(given_name) do
+  defp interpolate_element(%{given_name: given_name}, [:given | transforms], templates) do
     format_element(given_name, transforms, templates)
   end
 
@@ -182,9 +205,33 @@ defmodule Cldr.PersonName do
     format_element(other_given_names, transforms, templates)
   end
 
-  defp interpolate_element(%{surname: surname}, [:surname | transforms], templates)
-       when is_binary(surname) do
+  defp interpolate_element(%{surname_prefix: surname_prefix}, [:surname, :prefix | transforms], templates) do
+    format_element(surname_prefix, transforms, templates)
+  end
+
+  defp interpolate_element(%{surname: surname}, [:surname, :core | transforms], templates) do
     format_element(surname, transforms, templates)
+  end
+
+  defp interpolate_element(name, [:surname | transforms], templates) do
+    surname_prefix = format_element(name.surname_prefix, transforms, templates)
+    surname = format_element(name.surname, transforms, templates)
+    other_surnames = format_element(name.other_surnames, transforms, templates)
+    space = " "
+
+    complete_surname =
+      [surname_prefix, surname, other_surnames]
+      |> extract_values()
+      |> Enum.reject(&is_nil/1)
+      |> Enum.intersperse(space)
+
+    if complete_surname == [] do
+      nil
+    else
+      complete_surname
+      |> :erlang.iolist_to_binary()
+      |> wrap(:value)
+    end
   end
 
   defp interpolate_element(%{other_surnames: other_surnames}, [:surname2 | transforms], templates)
@@ -202,6 +249,10 @@ defmodule Cldr.PersonName do
     format_element(credentials, transforms, templates)
   end
 
+  defp interpolate_element(_name, element, _templates) when is_binary(element) do
+    element
+  end
+
   defp interpolate_element(_name, _element, _templates) do
     nil
   end
@@ -209,8 +260,11 @@ defmodule Cldr.PersonName do
   #
   # Formmatting transforms
   #
+  defp format_element(nil, _transforms, _templates) do
+    nil
+  end
 
-  defp format_element(value, transforms, {initial_template, _initial_sequence} = templates) do
+  defp format_element(value, transforms, templates) do
     Enum.reduce(transforms, value, fn
       :all_caps, value ->
         String.upcase(value)
@@ -218,28 +272,65 @@ defmodule Cldr.PersonName do
       :monogram, value ->
         String.first(value)
 
-      :prefix, _value ->
-        nil
-
-      :core, value ->
-        value
-
       :initial_cap, value ->
         String.capitalize(value)
 
       :initial, value ->
+        initialize_value(value, transforms, templates)
+
+      _other, value ->
         value
-        |> Unicode.String.split(break: :word, trim: true)
-        |> Enum.map(fn word ->
-          word
-          |> String.first()
-          |> Cldr.Substitution.substitute(initial_template)
-          |> join_initials(templates)
-        end)
     end)
+    |> wrap(:value)
   end
 
-  defp join_initials([first], _templates) do
+  defp initialize_value(value, transforms, {initial_template, _initial_sequence} = templates) do
+    retain_punctuation? =
+      Enum.any?(transforms, &(&1 == :retain))
+
+    value
+    |> Unicode.String.split(break: :word, trim: true)
+    |> Enum.reduce([], &initialize_word(&1, initial_template, &2, retain_punctuation?))
+    |> Enum.reverse()
+    |> join_initials(templates)
+    |> :erlang.iolist_to_binary()
+  end
+
+  defp initialize_word(word, initial_template, acc, false = _retain_punctuation?) do
+    if Unicode.alphabetic?(word) do
+      add_initial(word, initial_template, acc)
+    else
+      acc
+    end
+  end
+
+  defp initialize_word(word, initial_template, acc, true = _retain_punctuation?) do
+    if Unicode.alphabetic?(word) do
+      add_initial(word, initial_template, acc)
+    else
+      add_to_list(word, acc)
+    end
+  end
+
+  defp add_initial(word, initial_template, acc) do
+    word
+    |> String.first()
+    |> Cldr.Substitution.substitute(initial_template)
+    |> add_to_list(acc)
+  end
+
+  defp add_to_list(element, list) do
+    [element | list]
+  end
+
+  # Join multiple initials together when there is more
+  # than one.
+
+  defp join_initials([], _templates?) do
+    []
+  end
+
+  defp join_initials([first], _templates?) do
     [first]
   end
 
@@ -293,7 +384,7 @@ defmodule Cldr.PersonName do
     name_script = dominant_script(name)
 
     if name_locale.script == name_script do
-      {:ok, name_locale} |> IO.inspect(label: "Using name locale with script #{inspect name_script}}")
+      {:ok, name_locale} # |> IO.inspect(label: "Using name locale with script #{inspect name_script}}")
     else
       locale_name = Cldr.Locale.locale_name_from(name_locale.language, name_script, name_locale.territory, [])
       {:ok, formatting_locale} = Cldr.validate_locale(locale_name, name_locale.backend)
@@ -376,14 +467,14 @@ defmodule Cldr.PersonName do
     backend = Module.concat(backend, PersonName)
     locale_order = backend.locale_order(name_locale) || backend.locale_order(:und)
 
-    IO.inspect options[:order], label: "Options order"
-    IO.inspect name.preferred_order, label: "Name preferred order"
-    IO.inspect locale_order[language], label: "Language order"
-    IO.inspect locale_order[language], label: "Und order"
+    # IO.inspect options[:order], label: "Options order"
+    # IO.inspect name.preferred_order, label: "Name preferred order"
+    # IO.inspect locale_order[language], label: "Language order"
+    # IO.inspect locale_order[language], label: "Und order"
 
     order =
       options[:order] || name.preferred_order || locale_order[language] || locale_order["und"] || @default_order
-      |> IO.inspect(label: "Name order")
+      # |> IO.inspect(label: "Name order")
 
     {:ok, Keyword.put(options, :order, order)}
   end
@@ -398,6 +489,7 @@ defmodule Cldr.PersonName do
       format ->
         {:ok, format}
     end
+    # |> IO.inspect(label: "Format")
   end
 
   defp wrap(term, atom) do
