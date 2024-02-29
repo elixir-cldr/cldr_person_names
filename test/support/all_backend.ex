@@ -3,5 +3,4 @@ defmodule AllBackend.Cldr do
     locales: :all,
     default_locale: "en",
     providers: [Cldr.PersonName]
-
 end

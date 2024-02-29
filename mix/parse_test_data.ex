@@ -63,6 +63,13 @@ defmodule Cldr.PersonName.TestData do
     acc
   end
 
+  def tests_that_might_be_bugs(test) do
+    # Hebrew monogram tests include other_give_names even though the
+    # format is `given_name` only
+    (test.locale == :he && {:usage, :monogram} in test.params) ||
+    (test.locale == :es && test.line in [236, 352, 339, 145, 323])
+  end
+
   defp parse_line({_test, <<"name", _::binary>> = line}, _locale, [current | rest]) do
     [_key, field, value] = split_line(line)
     name = Map.put(current.name, field_name(field), value)
@@ -87,13 +94,14 @@ defmodule Cldr.PersonName.TestData do
       |> split_line()
       |> normalize_params()
 
-    params = [
-      order: order,
-      format: format,
-      usage: usage,
-      formality: formality
-    ]
-    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    params =
+      [
+        order: order,
+        format: format,
+        usage: usage,
+        formality: formality
+      ]
+      |> Enum.reject(fn {_k, v} -> is_nil(v) end)
 
     # Its nil when either a reset at start or endName or
     # when a new expectedResult is found

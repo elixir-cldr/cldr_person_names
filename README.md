@@ -6,7 +6,7 @@
 
 ## Introduction and Getting Started
 
-`ex_cldr_person_names` is an add-on library for [ex_cldr](https://hex.pm/packages/ex_cldr) that provides localised formatting for people's names.  It follows the [CLDR Person Names](https://www.unicode.org/reports/tr35/tr35-personNames.html) specification.
+`ex_cldr_person_names` is an add-on library for [ex_cldr](https://hex.pm/packages/ex_cldr) that provides localised formatting for peoples' names.  It follows the [CLDR Person Names](https://www.unicode.org/reports/tr35/tr35-personNames.html) specification.
 
 ### Configuration
 

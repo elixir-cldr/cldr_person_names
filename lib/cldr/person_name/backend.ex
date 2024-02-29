@@ -1,5 +1,5 @@
 defmodule Cldr.PersonName.Backend do
-  def define_backend_module(config) do
+  def define_person_name_module(config) do
     module = inspect(__MODULE__)
     backend = config.backend
     config = Macro.escape(config)

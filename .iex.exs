@@ -10,6 +10,10 @@ import Cldr.LanguageTag.Sigil, only: :macros
 {:ok, de_aq} = Cldr.validate_locale("de-AQ", MyApp.Cldr)
 {:ok, ko_aq} = Cldr.validate_locale("ko-AQ", MyApp.Cldr)
 {:ok, es_aq} = Cldr.validate_locale("es-AQ", MyApp.Cldr)
+{:ok, pt_aq} = Cldr.validate_locale("pt-AQ", MyApp.Cldr)
+{:ok, ja_aq} = Cldr.validate_locale("ja-AQ", MyApp.Cldr)
+{:ok, he_aq} = Cldr.validate_locale("he-AQ", MyApp.Cldr)
+{:ok, zh_aq} = Cldr.validate_locale("zh-AQ", MyApp.Cldr)
 {:ok, de} = Cldr.validate_locale("de", MyApp.Cldr)
 
 # name ; given; Mary Sue
@@ -132,4 +136,56 @@ pablo = %PersonName{
 # name ; locale; es_AQ
 
 rosa = %PersonName{given_name: "Rosa", other_given_names: "María", surname: "Ruiz", locale: es_aq}
+
+# name ; given; Maria
+# name ; surname; Silva
+# name ; locale; pt_AQ
+
+maria = %PersonName{given_name: "Maria", surname: "Silva", locale: pt_aq}
+
+# name ; given; 一郎
+# name ; surname; 安藤
+# name ; locale; ja_AQ
+
+ichiro = %PersonName{given_name: "一郎", surname: "安藤", locale: ja_aq}
+
+# name ; given; יונתן
+# name ; given2; חיים
+# name ; surname; כהן
+# name ; locale; he_AQ
+
+jonathan = %PersonName{
+  given_name: "יונתן",
+  other_given_names: "חיים",
+  surname: "כהן",
+  locale: he_aq
+}
+
+# name ; given; 俊年
+# name ; given2; 杰思
+# name ; surname; 陈
+# name ; locale; zh_AQ
+
+pretty = %PersonName{given_name: "俊年", other_given_names: "杰思", surname: "陈", locale: zh_aq}
+
+# name ; title; 先生
+# name ; given; 德威
+# name ; given-informal; 小德
+# name ; given2; 东升
+# name ; surname-core; 彭
+# name ; generation; 小
+# name ; credentials; 议员
+# name ; locale; zh_AQ
+
+virtue = %PersonName{
+  title: "先生",
+  given_name: "德威",
+  informal_given_name: "小德",
+  other_given_names: "东升",
+  surname: "彭",
+  other_surnames: "Pérez",
+  generation: "小",
+  credentials: "议员",
+  locale: zh_aq
+}
 

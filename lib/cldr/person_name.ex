@@ -25,12 +25,9 @@ defmodule Cldr.PersonName do
   @default_usage :addressing
   @default_formality :formal
 
-  import Kernel, except: [to_string: 1]
+  @format_space " "
 
-  @doc false
-  def cldr_backend_provider(config) do
-    Cldr.PersonName.Backend.define_backend_module(config)
-  end
+  import Kernel, except: [to_string: 1]
 
   defguardp is_initial(term) when is_list(term)
 
@@ -60,13 +57,15 @@ defmodule Cldr.PersonName do
          {:ok, options} <- validate_options(options),
          {:ok, name} <- validate_name(name),
          {:ok, name_locale} <- derive_name_locale(name, formatting_locale),
-         {:ok, formats, templates} <- formats(formatting_locale, name_locale, backend),
+         {:ok, formats} <- formats(formatting_locale, name_locale, backend),
          {:ok, options} <- determine_name_order(name, name_locale, backend, options),
          {:ok, format} <- select_format(formats, options),
          {:ok, name, format} <- adjust_for_mononym(name, format) do
       name
-      |> interpolate_format(format, templates)
-      |> join_initials(templates)
+      |> interpolate_format(format, formats)
+      # |> IO.inspect(label: "After interpolation")
+      |> foreign_or_native_space_replacement(name_locale, formatting_locale, formats)
+      # |> IO.inspect(label: "After ")
       |> wrap(:ok)
     end
   end
@@ -78,35 +77,90 @@ defmodule Cldr.PersonName do
     end
   end
 
+  # Setting the space replacement
+  #
+  # The foreignSpaceReplacement is provided by the value for the foreignSpaceReplacement element;
+  # the default value is a SPACE (" ").
+  #
+  # The nativeSpaceReplacement is provided by the value for the nativeSpaceReplacement element; the
+  # default value is SPACE (" ").
+  #
+  # If the formatter base language matches the name base language, then let spaceReplacement =
+  # nativeSpaceReplacement, otherwise let spaceReplacement = foreignSpaceReplacement.
+  #
+  # Replace all sequences of space in the formatted value string by the spaceReplacement.
+  #
+  # For the purposes of this algorithm, two base languages are said to match when they are
+  # identical, or if both are in {ja, zh, yue}.
+
+  defp foreign_or_native_space_replacement(list, name_locale, formatting_locale, formats) do
+    replacement = foreign_or_native(name_locale.language, formatting_locale.language, formats)
+
+    Enum.map list, fn
+      @format_space -> replacement
+      other -> String.replace(other, @format_space, replacement)
+    end
+  end
+
+  defp foreign_or_native(name_language, formatting_language, formats) do
+    if considered_the_same_language?(name_language, formatting_language) do
+      formats.native_space_replacement
+    else
+      formats.foreign_space_replacement
+    end
+  end
+
+  def considered_the_same_language?(language, language) do
+    true
+  end
+
+  def considered_the_same_language?(name_language, formatting_language) do
+    name_language in [:ja, :zh, :yue] && formatting_language in [:ja, :zh, :yue]
+  end
+
   #
   # Interpolate the format
   #
-  # If one or more fields at the start of the pattern are empty, all fields and literal text before the first populated field are omitted.
-  # If one or more fields at the end of the pattern are empty, all fields and literal text after the last populated field are omitted.
+  # If one or more fields at the start of the pattern are empty, all fields and literal text before
+  # the first populated field are omitted.
+  #
+  # If one or more fields at the end of the pattern are empty, all fields and literal text after
+  # the last populated field are omitted.
+  #
   # Processing from the start of the remaining pattern:
-  #   If there are two or more empty fields separated only by literals, the fields and the literals between them are removed.
+  #   If there are two or more empty fields separated only by literals, the fields and the literals
+  #   between them are removed.
+  #
   #   If there is a single empty field, it is removed.
-  #   If the processing from step 3 results in two adjacent literals (call them A and B), they are coalesced into one literal as follows:
-  #   If either is empty the result is the other one.
-  #   If B matches the end of A, then the result is A. So xyz + yz ⇒ xyz, and xyz + xyz ⇒ xyz.
-  #   Otherwise the result is A + B, further modified by replacing any sequence of two or more white space characters by the first whitespace character.
+  #
+  #   If the processing from step 3 results in two adjacent literals (call them A and B), they are
+  #   coalesced into one literal as follows:
+  #
+  #     If either is empty the result is the other one.
+  #     If B matches the end of A, then the result is A. So xyz + yz ⇒ xyz, and xyz + xyz ⇒ xyz.
+  #     Otherwise the result is A + B, further modified by replacing any sequence of two or more
+  #     white space characters by the first whitespace character.
 
-  # The start of the list is an empty element followed by a binary. In which case
-  # we omit both of them.
-  defp interpolate_format(name, elements, templates) do
+  defp interpolate_format(name, elements, formats) do
     elements
-    |> Enum.map(&interpolate_element(name, &1, templates))
+    |> Enum.map(&interpolate_element(name, &1, formats))
     |> remove_leading_emptiness()
     |> remove_trailing_emptiness()
-    # |> IO.inspect(label: "Before remove empty fields")
     |> remove_empty_fields()
     |> extract_values()
   end
 
-  defp remove_leading_emptiness([nil, element | rest]) when is_binary(element), do: remove_leading_emptiness(rest)
-  defp remove_leading_emptiness([element, nil | rest]) when is_binary(element), do: remove_leading_emptiness(rest)
-  defp remove_leading_emptiness([nil | rest]), do: remove_leading_emptiness(rest)
-  defp remove_leading_emptiness(rest), do: rest
+  defp remove_leading_emptiness([nil, element | rest]) when is_binary(element),
+    do: remove_leading_emptiness(rest)
+
+  defp remove_leading_emptiness([element, nil | rest]) when is_binary(element),
+    do: remove_leading_emptiness(rest)
+
+  defp remove_leading_emptiness([nil | rest]),
+    do: remove_leading_emptiness(rest)
+
+  defp remove_leading_emptiness(rest),
+    do: rest
 
   defp remove_trailing_emptiness(elements) do
     elements
@@ -116,7 +170,7 @@ defmodule Cldr.PersonName do
   end
 
   defp remove_empty_fields([{:value, element}, binary | rest]) when is_binary(binary) do
-    [{:value, element}, binary | remove_empty_fields(rest)]
+    [{:value, element} | remove_empty_fields([binary | rest])]
   end
 
   defp remove_empty_fields([nil, binary | rest]) when is_binary(binary) do
@@ -169,7 +223,7 @@ defmodule Cldr.PersonName do
   end
 
   defp format_has_full_given_name?(format) do
-    Enum.any?(format, &(is_list(&1) && (hd(&1) == :given) && (:initial not in &1)))
+    Enum.any?(format, &(is_list(&1) && hd(&1) == :given && :initial not in &1))
   end
 
   defp move_given_to_surname(name) do
@@ -185,37 +239,41 @@ defmodule Cldr.PersonName do
     end)
   end
 
-  defp interpolate_element(%{title: title}, [:title | transforms], templates) do
-    format_element(title, transforms, templates)
+  defp interpolate_element(%{title: title}, [:title | transforms], formats) do
+    format_element(title, transforms, formats)
   end
 
-  defp interpolate_element(name, [:given, :informal | transforms], templates) do
-    format_element(name.informal_given_name || name.given_name, transforms, templates)
+  defp interpolate_element(name, [:given, :informal | transforms], formats) do
+    format_element(name.informal_given_name || name.given_name, transforms, formats)
   end
 
-  defp interpolate_element(%{given_name: given_name}, [:given | transforms], templates) do
-    format_element(given_name, transforms, templates)
+  defp interpolate_element(%{given_name: given_name}, [:given | transforms], formats) do
+    format_element(given_name, transforms, formats)
   end
 
   defp interpolate_element(
          %{other_given_names: other_given_names},
          [:given2 | transforms],
-         templates
+         formats
        )
        when is_binary(other_given_names) do
-    format_element(other_given_names, transforms, templates)
+    format_element(other_given_names, transforms, formats)
   end
 
-  defp interpolate_element(%{surname_prefix: surname_prefix}, [:surname, :prefix | transforms], templates) do
-    format_element(surname_prefix, transforms, templates)
+  defp interpolate_element(
+         %{surname_prefix: surname_prefix},
+         [:surname, :prefix | transforms],
+         formats
+       ) do
+    format_element(surname_prefix, transforms, formats)
   end
 
-  defp interpolate_element(%{surname: surname}, [:surname, :core | transforms], templates) do
-    format_element(surname, transforms, templates)
+  defp interpolate_element(%{surname: surname}, [:surname, :core | transforms], formats) do
+    format_element(surname, transforms, formats)
   end
 
-  defp interpolate_element(name, [:surname, :monogram | transforms], templates) do
-    complete_surname = format_surname(name, transforms, templates)
+  defp interpolate_element(name, [:surname, :monogram | transforms], formats) do
+    complete_surname = format_surname(name, transforms, formats)
 
     if complete_surname == [] do
       nil
@@ -227,12 +285,12 @@ defmodule Cldr.PersonName do
     end
   end
 
-  defp interpolate_element(name, [:surname | transforms], templates) do
-    space = " "
+  defp interpolate_element(name, [:surname | transforms], formats) do
+    space = formats.native_space_replacement
 
     complete_surname =
       name
-      |> format_surname(transforms, templates)
+      |> format_surname(transforms, formats)
       |> Enum.intersperse(space)
 
     if complete_surname == [] do
@@ -244,26 +302,26 @@ defmodule Cldr.PersonName do
     end
   end
 
-  defp interpolate_element(%{other_surnames: other_surnames}, [:surname2 | transforms], templates)
+  defp interpolate_element(%{other_surnames: other_surnames}, [:surname2 | transforms], formats)
        when is_binary(other_surnames) do
-    format_element(other_surnames, transforms, templates)
+    format_element(other_surnames, transforms, formats)
   end
 
-  defp interpolate_element(%{generation: generation}, [:generation | transforms], templates)
+  defp interpolate_element(%{generation: generation}, [:generation | transforms], formats)
        when is_binary(generation) do
-    format_element(generation, transforms, templates)
+    format_element(generation, transforms, formats)
   end
 
-  defp interpolate_element(%{credentials: credentials}, [:credentials | transforms], templates)
+  defp interpolate_element(%{credentials: credentials}, [:credentials | transforms], formats)
        when is_binary(credentials) do
-    format_element(credentials, transforms, templates)
+    format_element(credentials, transforms, formats)
   end
 
-  defp interpolate_element(_name, element, _templates) when is_binary(element) do
+  defp interpolate_element(_name, element, _formats) when is_binary(element) do
     element
   end
 
-  defp interpolate_element(_name, _element, _templates) do
+  defp interpolate_element(_name, _element, _formats) do
     nil
   end
 
@@ -271,11 +329,11 @@ defmodule Cldr.PersonName do
   # Formmatting transforms
   #
 
-  defp format_element(nil, _transforms, _templates) do
+  defp format_element(nil, _transforms, _formats) do
     nil
   end
 
-  defp format_element(value, transforms, templates) do
+  defp format_element(value, transforms, formats) do
     Enum.reduce(transforms, value, fn
       :all_caps, value ->
         String.upcase(value)
@@ -287,7 +345,7 @@ defmodule Cldr.PersonName do
         String.capitalize(value)
 
       :initial, value ->
-        initialize_value(value, transforms, templates)
+        initialize_value(value, transforms, formats)
 
       _other, value ->
         value
@@ -295,25 +353,24 @@ defmodule Cldr.PersonName do
     |> wrap(:value)
   end
 
-  defp format_surname(name, transforms, templates) do
-    surname_prefix = format_element(name.surname_prefix, transforms, templates)
-    surname = format_element(name.surname, transforms, templates)
+  defp format_surname(name, transforms, formats) do
+    surname_prefix = format_element(name.surname_prefix, transforms, formats)
+    surname = format_element(name.surname, transforms, formats)
 
     [surname_prefix, surname]
     |> extract_values()
     |> Enum.reject(&is_nil/1)
-    # |> IO.inspect(label: "Formatted surname")
   end
 
-  defp initialize_value(value, transforms, {initial_template, _initial_sequence} = templates) do
+  defp initialize_value(value, transforms, formats) do
     retain_punctuation? =
       Enum.any?(transforms, &(&1 == :retain))
 
     value
     |> Unicode.String.split(break: :word, trim: true)
-    |> Enum.reduce([], &initialize_word(&1, initial_template, &2, retain_punctuation?))
+    |> Enum.reduce([], &initialize_word(&1, formats.initial, &2, retain_punctuation?))
     |> Enum.reverse()
-    |> join_initials(templates)
+    |> join_initials(formats)
     |> :erlang.iolist_to_binary()
   end
 
@@ -348,34 +405,32 @@ defmodule Cldr.PersonName do
   # Helpers
   #
 
-  # Join multiple initials together when there is more
+  # Join multiple initials together when there are more
   # than one.
 
-  defp join_initials([], _templates?) do
-    []
-  end
-
-  defp join_initials([first], _templates?) do
+  defp join_initials([first], _formats) do
     [first]
   end
 
-  defp join_initials([first, second | rest], {_initial, sequence} = templates)
-       when is_initial(first) and is_initial(second) do
-    join_initials([Cldr.Substitution.substitute([first, second], sequence) | rest], templates)
+  defp join_initials([first, second | rest], formats)
+      when is_initial(first) and is_initial(second) do
+    substitution = Cldr.Substitution.substitute([first, second], formats.initial_sequence)
+    join_initials([substitution | rest], formats)
   end
 
-  defp join_initials([first | rest], templates) do
-    [first | join_initials(rest, templates)]
+  defp join_initials([first | rest], formats) do
+    [first | join_initials(rest, formats)]
   end
 
-  defp validate_name(%{surname: surname, given_name: given_name} = name)
-       when is_binary(surname) or is_binary(given_name) do
-    {:ok,  name}
+  # A name needs only a given name to be minimally viable.
+
+  defp validate_name(%{given_name: given_name} = name) when is_binary(given_name) do
+    {:ok, name}
   end
 
   defp validate_name(name) do
     {:error,
-     "Name requires at least one of the fields :surname and :given_name. Found #{inspect(name)}"}
+     "Name requires at least a :given_name. Found #{inspect(name)}"}
   end
 
   # Derive the name locale
@@ -389,10 +444,14 @@ defmodule Cldr.PersonName do
   # Construct the name base language in the following way.
   #
   # If the PersonName object can provide a name locale, return its language.
-  # Otherwise, find the maximal likely locale for the name script and return its base language (first subtag).
+  # Otherwise, find the maximal likely locale for the name script and return its base language
+  # (first subtag).
+  #
   # Construct the name locale in the following way:
   #
-  # If the PersonName object can provide a name locale, return a locale formed from it by replacing its script by the name script.
+  # If the PersonName object can provide a name locale, return a locale formed from it by replacing
+  # its script by the name script.
+  #
   # Otherwise, return the locale formed from the name base language plus name script.
   # Construct the name ordering locale in the following way:
   #
@@ -405,7 +464,9 @@ defmodule Cldr.PersonName do
     if name_locale.script == name_script do
       {:ok, name_locale}
     else
-      locale_name = Cldr.Locale.locale_name_from(name_locale.language, name_script, name_locale.territory, [])
+      locale_name =
+        Cldr.Locale.locale_name_from(name_locale.language, name_script, name_locale.territory, [])
+
       Cldr.validate_locale(locale_name, name_locale.backend)
     end
     # |> IO.inspect(label: "Name locale")
@@ -413,29 +474,37 @@ defmodule Cldr.PersonName do
 
   # Derive the formatting locale
   #
-  #  Let the full formatting locale be the maximal likely locale for the formatter's locale. The formatting base language is the base language
-  #  (first subtag) of the full formatting locale, and the formatting script is the script code of the full formatting locale.
+  #  Let the full formatting locale be the maximal likely locale for the formatter's locale. The
+  #  formatting base language is the base language (first subtag) of the full formatting locale,
+  #  and the formatting script is the script code of the full formatting locale.
   #
   #  Switch the formatting locale if necessary
   #
-  #  A few script values represent a set of scripts, such as Jpan = {Hani, Kana, Hira}. Two script codes are said to match when they are either
-  #  identical, or one represents a set which contains the other, or they both represent sets which intersect. For example, Hani and Jpan
-  #  match, because {Hani, Kana, Hira} contains Hani.
+  #  A few script values represent a set of scripts, such as Jpan = {Hani, Kana, Hira}. Two script
+  #  codes are said to match when they are either identical, or one represents a set which contains
+  #  the other, or they both represent sets which intersect. For example, Hani and Jpan match,
+  #  because {Hani, Kana, Hira} contains Hani.
   #
   #  If the name script doesn't match the formatting script:
   #
-  #    If the name locale has name formatting data, then set the formatting locale to the name locale.
-  #    Otherwise, set the formatting locale to the maximal likely locale for the the locale formed from und, plus the name script plus the
-  #    region of the nameLocale.
+  #    If the name locale has name formatting data, then set the formatting locale to the name
+  #    locale.
   #
-  #    For example, when a Hindi (Devanagari) formatter is called upon to format a name object that has the locale Ukrainian (Cyrillic):
+  #    Otherwise, set the formatting locale to the maximal likely locale for the the locale formed
+  #    from und, plus the name script plus the region of the nameLocale.
   #
-  #    If the name is written with Cyrillic letters, under the covers a Ukrainian (Cyrillic) formatter should be instantiated and used to
-  #    format that name.
+  #    For example, when a Hindi (Devanagari) formatter is called upon to format a name object that
+  #    has the locale Ukrainian (Cyrillic):
   #
-  #  If the name is written in Greek letters, then under the covers a Greek (Greek-script) formatter should be instantiated and used to format.
-  #  To determine whether there is name formatting data for a locale, get the values for each of the following paths. If at least one of them
-  #  doesn’t inherit their value from root, then the locale has name formatting data.
+  #    If the name is written with Cyrillic letters, under the covers a Ukrainian (Cyrillic)
+  #    formatter should be instantiated and used to format that name.
+  #
+  #  If the name is written in Greek letters, then under the covers a Greek (Greek-script)
+  #  formatter should be instantiated and used to format.
+  #
+  #  To determine whether there is name formatting data for a locale, get the values for each of
+  #  the following paths. If at least one of them doesn’t inherit their value from root, then the
+  #  locale has name formatting data.
 
   defp derive_name_locale(%{locale: nil} = name, formatting_locale) do
     name_script = dominant_script(name)
@@ -444,7 +513,7 @@ defmodule Cldr.PersonName do
     if name_locale do
       {:ok, name_locale}
     else
-      {:error, "No locale resolved for script #{inspect name_script}"}
+      {:error, "No locale resolved for script #{inspect(name_script)}"}
     end
   end
 
@@ -504,9 +573,7 @@ defmodule Cldr.PersonName do
     # IO.inspect formatting_locale, label: "Formatting locale"
     backend = Module.concat(backend, PersonName)
     formats = backend.formats_for(formatting_locale) || backend.formats_for(:und)
-    initial = Map.fetch!(formats, :initial)
-    initial_sequence = Map.fetch!(formats, :initial_sequence)
-    {:ok, formats, {initial, initial_sequence}}
+    {:ok, formats}
   end
 
   defp determine_name_order(name, name_locale, backend, options) do
@@ -514,14 +581,9 @@ defmodule Cldr.PersonName do
     backend = Module.concat(backend, PersonName)
     locale_order = backend.locale_order(name_locale) || backend.locale_order(:und)
 
-    # IO.inspect options[:order], label: "Options order"
-    # IO.inspect name.preferred_order, label: "Name preferred order"
-    # IO.inspect locale_order[language], label: "Language order"
-    # IO.inspect locale_order[language], label: "Und order"
-
     order =
-      options[:order] || name.preferred_order || locale_order[language] || locale_order["und"] || @default_order
-      # |> IO.inspect(label: "Name order")
+      options[:order] || name.preferred_order || locale_order[language] || locale_order["und"] ||
+        @default_order
 
     {:ok, Keyword.put(options, :order, order)}
   end
