@@ -21,9 +21,7 @@ defmodule Cldr.PersonName do
   defstruct @person_name
 
   @default_order :given_first
-  @default_format :medium
   @default_usage :addressing
-  @default_formality :formal
 
   @format_space " "
 
@@ -54,15 +52,15 @@ defmodule Cldr.PersonName do
     {locale, backend} = Cldr.locale_and_backend_from(options)
 
     with {:ok, formatting_locale} <- Cldr.validate_locale(locale, backend),
-         {:ok, options} <- validate_options(options),
          {:ok, name} <- validate_name(name),
          {:ok, name_locale} <- derive_name_locale(name, formatting_locale),
          {:ok, formats} <- formats(formatting_locale, name_locale, backend),
+         {:ok, options} <- validate_options(formats, options),
          {:ok, options} <- determine_name_order(name, name_locale, backend, options),
          {:ok, format} <- select_format(formats, options),
          {:ok, name, format} <- adjust_for_mononym(name, format) do
       name
-      |> interpolate_format(format, formats)
+      |> interpolate_format(locale, format, formats)
       # |> IO.inspect(label: "After interpolation")
       |> foreign_or_native_space_replacement(name_locale, formatting_locale, formats)
       # |> IO.inspect(label: "After ")
@@ -96,10 +94,10 @@ defmodule Cldr.PersonName do
   defp foreign_or_native_space_replacement(list, name_locale, formatting_locale, formats) do
     replacement = foreign_or_native(name_locale.language, formatting_locale.language, formats)
 
-    Enum.map list, fn
+    Enum.map(list, fn
       @format_space -> replacement
       other -> String.replace(other, @format_space, replacement)
-    end
+    end)
   end
 
   defp foreign_or_native(name_language, formatting_language, formats) do
@@ -141,9 +139,9 @@ defmodule Cldr.PersonName do
   #     Otherwise the result is A + B, further modified by replacing any sequence of two or more
   #     white space characters by the first whitespace character.
 
-  defp interpolate_format(name, elements, formats) do
+  defp interpolate_format(name, locale, elements, formats) do
     elements
-    |> Enum.map(&interpolate_element(name, &1, formats))
+    |> Enum.map(&interpolate_element(name, &1, locale, formats))
     |> remove_leading_emptiness()
     |> remove_trailing_emptiness()
     |> remove_empty_fields()
@@ -239,41 +237,43 @@ defmodule Cldr.PersonName do
     end)
   end
 
-  defp interpolate_element(%{title: title}, [:title | transforms], formats) do
-    format_element(title, transforms, formats)
+  defp interpolate_element(%{title: title}, [:title | transforms], locale, formats) do
+    format_element(title, locale, transforms, formats)
   end
 
-  defp interpolate_element(name, [:given, :informal | transforms], formats) do
-    format_element(name.informal_given_name || name.given_name, transforms, formats)
+  defp interpolate_element(name, [:given, :informal | transforms], locale, formats) do
+    format_element(name.informal_given_name || name.given_name, locale, transforms, formats)
   end
 
-  defp interpolate_element(%{given_name: given_name}, [:given | transforms], formats) do
-    format_element(given_name, transforms, formats)
+  defp interpolate_element(%{given_name: given_name}, [:given | transforms], locale, formats) do
+    format_element(given_name, locale, transforms, formats)
   end
 
   defp interpolate_element(
          %{other_given_names: other_given_names},
          [:given2 | transforms],
+         locale,
          formats
        )
        when is_binary(other_given_names) do
-    format_element(other_given_names, transforms, formats)
+    format_element(other_given_names, locale, transforms, formats)
   end
 
   defp interpolate_element(
          %{surname_prefix: surname_prefix},
          [:surname, :prefix | transforms],
+         locale,
          formats
        ) do
-    format_element(surname_prefix, transforms, formats)
+    format_element(surname_prefix, locale, transforms, formats)
   end
 
-  defp interpolate_element(%{surname: surname}, [:surname, :core | transforms], formats) do
-    format_element(surname, transforms, formats)
+  defp interpolate_element(%{surname: surname}, [:surname, :core | transforms], locale, formats) do
+    format_element(surname, locale, transforms, formats)
   end
 
-  defp interpolate_element(name, [:surname, :monogram | transforms], formats) do
-    complete_surname = format_surname(name, transforms, formats)
+  defp interpolate_element(name, [:surname, :monogram | transforms], locale, formats) do
+    complete_surname = format_surname(name, locale, transforms, formats)
 
     if complete_surname == [] do
       nil
@@ -285,12 +285,12 @@ defmodule Cldr.PersonName do
     end
   end
 
-  defp interpolate_element(name, [:surname | transforms], formats) do
+  defp interpolate_element(name, [:surname | transforms], locale, formats) do
     space = formats.native_space_replacement
 
     complete_surname =
       name
-      |> format_surname(transforms, formats)
+      |> format_surname(locale, transforms, formats)
       |> Enum.intersperse(space)
 
     if complete_surname == [] do
@@ -302,26 +302,36 @@ defmodule Cldr.PersonName do
     end
   end
 
-  defp interpolate_element(%{other_surnames: other_surnames}, [:surname2 | transforms], formats)
+  defp interpolate_element(
+         %{other_surnames: other_surnames},
+         [:surname2 | transforms],
+         locale,
+         formats
+       )
        when is_binary(other_surnames) do
-    format_element(other_surnames, transforms, formats)
+    format_element(other_surnames, locale, transforms, formats)
   end
 
-  defp interpolate_element(%{generation: generation}, [:generation | transforms], formats)
+  defp interpolate_element(%{generation: generation}, [:generation | transforms], locale, formats)
        when is_binary(generation) do
-    format_element(generation, transforms, formats)
+    format_element(generation, locale, transforms, formats)
   end
 
-  defp interpolate_element(%{credentials: credentials}, [:credentials | transforms], formats)
+  defp interpolate_element(
+         %{credentials: credentials},
+         [:credentials | transforms],
+         locale,
+         formats
+       )
        when is_binary(credentials) do
-    format_element(credentials, transforms, formats)
+    format_element(credentials, locale, transforms, formats)
   end
 
-  defp interpolate_element(_name, element, _formats) when is_binary(element) do
+  defp interpolate_element(_name, element, _locale, _formats) when is_binary(element) do
     element
   end
 
-  defp interpolate_element(_name, _element, _formats) do
+  defp interpolate_element(_name, _element, _locale, _formats) do
     nil
   end
 
@@ -329,11 +339,11 @@ defmodule Cldr.PersonName do
   # Formmatting transforms
   #
 
-  defp format_element(nil, _transforms, _formats) do
+  defp format_element(nil, _locale, _transforms, _formats) do
     nil
   end
 
-  defp format_element(value, transforms, formats) do
+  defp format_element(value, locale, transforms, formats) do
     Enum.reduce(transforms, value, fn
       :all_caps, value ->
         String.upcase(value)
@@ -345,7 +355,7 @@ defmodule Cldr.PersonName do
         String.capitalize(value)
 
       :initial, value ->
-        initialize_value(value, transforms, formats)
+        initialize_value(value, locale, transforms, formats)
 
       _other, value ->
         value
@@ -353,21 +363,21 @@ defmodule Cldr.PersonName do
     |> wrap(:value)
   end
 
-  defp format_surname(name, transforms, formats) do
-    surname_prefix = format_element(name.surname_prefix, transforms, formats)
-    surname = format_element(name.surname, transforms, formats)
+  defp format_surname(name, locale, transforms, formats) do
+    surname_prefix = format_element(name.surname_prefix, locale, transforms, formats)
+    surname = format_element(name.surname, locale, transforms, formats)
 
     [surname_prefix, surname]
     |> extract_values()
     |> Enum.reject(&is_nil/1)
   end
 
-  defp initialize_value(value, transforms, formats) do
+  defp initialize_value(value, locale, transforms, formats) do
     retain_punctuation? =
       Enum.any?(transforms, &(&1 == :retain))
 
     value
-    |> Unicode.String.split(break: :word, trim: true)
+    |> Unicode.String.split(break: :word, trim: true, locale: locale)
     |> Enum.reduce([], &initialize_word(&1, formats.initial, &2, retain_punctuation?))
     |> Enum.reverse()
     |> join_initials(formats)
@@ -413,7 +423,7 @@ defmodule Cldr.PersonName do
   end
 
   defp join_initials([first, second | rest], formats)
-      when is_initial(first) and is_initial(second) do
+       when is_initial(first) and is_initial(second) do
     substitution = Cldr.Substitution.substitute([first, second], formats.initial_sequence)
     join_initials([substitution | rest], formats)
   end
@@ -429,8 +439,7 @@ defmodule Cldr.PersonName do
   end
 
   defp validate_name(name) do
-    {:error,
-     "Name requires at least a :given_name. Found #{inspect(name)}"}
+    {:error, "Name requires at least a :given_name. Found #{inspect(name)}"}
   end
 
   # Derive the name locale
@@ -469,6 +478,7 @@ defmodule Cldr.PersonName do
 
       Cldr.validate_locale(locale_name, name_locale.backend)
     end
+
     # |> IO.inspect(label: "Name locale")
   end
 
@@ -545,9 +555,9 @@ defmodule Cldr.PersonName do
     likely_locale && Cldr.Locale.canonical_language_tag(likely_locale, backend)
   end
 
-  defp validate_options(options) do
+  defp validate_options(formats, options) do
     options =
-      default_options()
+      default_options(formats)
       |> Keyword.merge(options)
       |> Keyword.take([:order, :format, :usage, :formality])
 
@@ -605,11 +615,11 @@ defmodule Cldr.PersonName do
     {atom, term}
   end
 
-  defp default_options do
+  defp default_options(formats) do
     [
-      format: @default_format,
+      format: formats.length,
+      formality: formats.formality,
       usage: @default_usage,
-      formality: @default_formality
     ]
   end
 end

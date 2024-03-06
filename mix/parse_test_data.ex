@@ -67,7 +67,7 @@ defmodule Cldr.PersonName.TestData do
     # Hebrew monogram tests include other_give_names even though the
     # format is `given_name` only
     (test.locale == :he && {:usage, :monogram} in test.params) ||
-    (test.locale == :es && test.line in [236, 352, 339, 145, 323])
+      (test.locale == :es && test.line in [236, 352, 339, 145, 323])
   end
 
   defp parse_line({_test, <<"name", _::binary>> = line}, _locale, [current | rest]) do

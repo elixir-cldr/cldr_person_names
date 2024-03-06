@@ -89,6 +89,7 @@ defmodule Cldr.PersonName.Backend do
               end,
               only: [:formal, :informal]
             )
+            |> Cldr.Map.atomize_values(only: [:length, :formality])
             |> Map.new()
 
           given_order =
