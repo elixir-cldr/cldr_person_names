@@ -20,6 +20,7 @@ defmodule Cldr.PersonName do
 
   defstruct @person_name
 
+  @format_options [:format, :usage, :order, :formality]
   @default_order :given_first
   @default_usage :addressing
 
@@ -61,9 +62,7 @@ defmodule Cldr.PersonName do
          {:ok, name, format} <- adjust_for_mononym(name, format) do
       name
       |> interpolate_format(locale, format, formats)
-      # |> IO.inspect(label: "After interpolation")
       |> foreign_or_native_space_replacement(name_locale, formatting_locale, formats)
-      # |> IO.inspect(label: "After ")
       |> wrap(:ok)
     end
   end
@@ -108,11 +107,11 @@ defmodule Cldr.PersonName do
     end
   end
 
-  def considered_the_same_language?(language, language) do
+  defp considered_the_same_language?(language, language) do
     true
   end
 
-  def considered_the_same_language?(name_language, formatting_language) do
+  defp considered_the_same_language?(name_language, formatting_language) do
     name_language in [:ja, :zh, :yue] && formatting_language in [:ja, :zh, :yue]
   end
 
@@ -200,10 +199,15 @@ defmodule Cldr.PersonName do
 
   # Handle missing surname
   #
-  # All PersonName objects will have a given name (for mononyms the given name is used). However, there may not be a surname. In that case, the following process is followed so that formatted patterns produce reasonable results.
-  # If there is no surname from a PersonName P1 and the pattern either doesn't include the given name or only shows an initial for the given name, then:
+  # All PersonName objects will have a given name (for mononyms the given name is used). However,
+  # there may not be a surname. In that case, the following process is followed so that formatted
+  # patterns produce reasonable results.
+  #
+  # If there is no surname from a PersonName P1 and the pattern either doesn't include the given
+  # name or only shows an initial for the given name, then:
   #   Construct and use a derived PersonName P2, whereby P2 behaves exactly as P1 except that:
-  #   Any request for a surname field (with any modifiers) returns P1's given name (with the same modifiers)
+  #   Any request for a surname field (with any modifiers) returns P1's given name (with the same
+  #.  modifiers)
   #   Any request for a given name field (with any modifiers) returns "" (empty string)
 
   def adjust_for_mononym(%{surname: surname} = name, format) when is_binary(surname) do
@@ -418,6 +422,10 @@ defmodule Cldr.PersonName do
   # Join multiple initials together when there are more
   # than one.
 
+  defp join_initials([], _formats) do
+    []
+  end
+
   defp join_initials([first], _formats) do
     [first]
   end
@@ -478,8 +486,6 @@ defmodule Cldr.PersonName do
 
       Cldr.validate_locale(locale_name, name_locale.backend)
     end
-
-    # |> IO.inspect(label: "Name locale")
   end
 
   # Derive the formatting locale
@@ -559,7 +565,7 @@ defmodule Cldr.PersonName do
     options =
       default_options(formats)
       |> Keyword.merge(options)
-      |> Keyword.take([:order, :format, :usage, :formality])
+      |> Keyword.take(@format_options)
 
     Enum.reduce_while(options, {:ok, options}, fn
       {:format, value}, acc when value in [:short, :medium, :long] ->
@@ -574,8 +580,11 @@ defmodule Cldr.PersonName do
       {:formality, value}, acc when value in [:formal, :informal] ->
         {:cont, acc}
 
-      {option, value}, _acc ->
-        {:halt, {:error, "Invalid value #{inspect(value)} for option #{inspect(option)}"}}
+      {option, value}, _acc when option in @format_options ->
+        {:halt, {:error, "Invalid value #{inspect value} for option #{inspect option}"}}
+
+      {option, _value}, _acc ->
+        {:halt, {:error, "Invalid option #{inspect(option)}"}}
     end)
   end
 

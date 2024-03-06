@@ -24,7 +24,19 @@ defmodule Cldr.PersonName.FormatTest do
     :ko,
     :af,
     :fi,
-    :id
+    :id,
+    :am,
+    :ar,
+    # :as,
+    :az,
+    :be,
+    :bg,
+    :bn,
+    :bs,
+    :ca,
+    :chr,
+    :cs,
+    :cy
   ]
 
   # for test <- Cldr.PersonName.TestData.parse_all_locales() do
