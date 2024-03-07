@@ -10,10 +10,7 @@ defmodule Cldr.PersonName.TestData do
             params: []
 
   def parse_all_locales do
-    @test_data_dir
-    |> Path.join("/*.txt")
-    |> Path.wildcard()
-    |> Enum.map(&Path.basename(&1, ".txt"))
+    all_locales()
     |> Enum.map(&parse_locale/1)
     |> List.flatten()
     |> Enum.reject(&is_nil(&1.line))
@@ -63,12 +60,22 @@ defmodule Cldr.PersonName.TestData do
     acc
   end
 
-  def tests_that_might_be_bugs(test) do
-    # Hebrew monogram tests include other_give_names even though the
-    # format is `given_name` only
-    (test.locale == :he && {:usage, :monogram} in test.params) ||
-      (test.locale == :es && test.line in [236, 352, 339, 145, 323])
+  def all_locales do
+    @test_data_dir
+    |> Path.join("/*.txt")
+    |> Path.wildcard()
+    |> Enum.map(&Path.basename(&1, ".txt"))
+    |> Enum.reject(&String.starts_with?(&1, "_"))
+    |> Enum.map(&String.to_atom/1)
+    |> Enum.sort()
   end
+
+  # def tests_that_might_be_bugs(test) do
+  #   # Hebrew monogram tests include other_give_names even though the
+  #   # format is `given_name` only
+  #   (test.locale == :he && {:usage, :monogram} in test.params) ||
+  #     (test.locale == :es && test.line in [236, 352, 339, 145, 323])
+  # end
 
   defp parse_line({_test, <<"name", _::binary>> = line}, _locale, [current | rest]) do
     [_key, field, value] = split_line(line)
