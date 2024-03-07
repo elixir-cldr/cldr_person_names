@@ -290,12 +290,10 @@ defmodule Cldr.PersonName do
   end
 
   defp interpolate_element(name, [:surname | transforms], locale, formats) do
-    space = formats.native_space_replacement
-
     complete_surname =
       name
       |> format_surname(locale, transforms, formats)
-      |> Enum.intersperse(space)
+      |> Enum.intersperse(@format_space)
 
     if complete_surname == [] do
       nil
@@ -365,6 +363,17 @@ defmodule Cldr.PersonName do
         value
     end)
     |> wrap(:value)
+  end
+
+  defp format_surname(name, locale, [:initial | transforms], formats) do
+    surname_prefix = format_element(name.surname_prefix, locale, [:initial | transforms], formats)
+    surname = format_element(name.surname, locale, [:initial | transforms], formats)
+
+    [surname_prefix, surname]
+    |> extract_values()
+    |> Enum.reject(&is_nil/1)
+    |> Enum.map(&[&1])
+    |> join_initials(formats)
   end
 
   defp format_surname(name, locale, transforms, formats) do

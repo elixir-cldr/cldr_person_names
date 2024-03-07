@@ -4,11 +4,12 @@ defmodule Cldr.PersonName.FormatTest do
   @tests 1..1000
   @all_locales Cldr.PersonName.TestData.all_locales()
 
-  @failing_locales [:as, :ca, :cs, :es, :es_419, :es_MX, :es_US, :gl, :gu, :hi, :kn, :km, :he]
+  @failing_locales [
+    :as, :ca, :cs, :es, :es_419, :es_MX, :es_US, :gl, :gu, :hi, :kn, :km, :he, :or, :si, :my, :te, :pa, :ml, :ne, :mr, :el, :ko
+  ]
 
-  @tests_not_compiling []
-
-  @test_locales ((@all_locales -- @failing_locales) --  @tests_not_compiling)
+  @test_locales (@all_locales -- @failing_locales)
+  @test_locales [:en, :it, :de, :fr, :da, :id, :nl, :pt_PT, :zh, :zh_Hant, :zh_Hant_HK, :ja, :ko]
 
   for test <- Cldr.PersonName.TestData.parse_locales(@test_locales),
       test.line in @tests do

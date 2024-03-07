@@ -166,7 +166,12 @@ jonathan = %PersonName{
 # name ; surname; 陈
 # name ; locale; zh_AQ
 
-pretty = %PersonName{given_name: "俊年", other_given_names: "杰思", surname: "陈", locale: zh_aq}
+pretty = %PersonName{
+  given_name: "俊年",
+  other_given_names: "杰思",
+  surname: "陈",
+  locale: zh_aq
+}
 
 # name ; title; 先生
 # name ; given; 德威
@@ -183,9 +188,54 @@ virtue = %PersonName{
   informal_given_name: "小德",
   other_given_names: "东升",
   surname: "彭",
-  other_surnames: "Pérez",
   generation: "小",
   credentials: "议员",
   locale: zh_aq
+}
+
+# name ; title; 教授
+# name ; given; 艾达·科妮莉亚
+# name ; given-informal; 尼尔
+# name ; given2; 塞萨尔·马丁
+# name ; surname-prefix; 冯
+# name ; surname-core; 布鲁赫
+# name ; generation; 小
+# name ; credentials; 博士
+# name ; locale; en_AQ
+
+ada_zh = %PersonName{
+  title: "教授",
+  given_name: "艾达·科妮莉亚",
+  informal_given_name: "尼尔",
+  other_given_names: "塞萨尔·马丁",
+  surname_prefix: "冯",
+  surname: "布鲁赫",
+  generation: "小",
+  credentials: "博士",
+  locale: en_aq
+}
+
+# name ; title; Prof. Dr.
+# name ; given; Ada Cornelia
+# name ; given-informal; Neele
+# name ; given2; César Martín
+# name ; surname-prefix; von
+# name ; surname-core; Brühl
+# name ; surname2; González Domingo
+# name ; generation; Jr
+# name ; credentials; MD DDS
+# name ; locale; ja_AQ
+
+ada = %PersonName{
+  title: "Prof. Dr.",
+  given_name: "Ada Cornelia",
+  informal_given_name: "Neele",
+  other_given_names: "César Martín",
+  surname_prefix: "von",
+  surname: "Brühl",
+  other_surnames: "González Domingo",
+  generation: "Jr",
+  credentials: "MD DDS",
+  locale: ja_aq
 }
 
