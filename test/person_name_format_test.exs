@@ -9,7 +9,12 @@ defmodule Cldr.PersonName.FormatTest do
   ]
 
   @test_locales (@all_locales -- @failing_locales)
+
+  # These all pass tests
   @test_locales [:en, :it, :de, :fr, :da, :id, :nl, :pt_PT, :zh, :zh_Hant, :zh_Hant_HK, :ja, :ko]
+
+  # These are work in progress
+  @test_locales [:es_MX]
 
   for test <- Cldr.PersonName.TestData.parse_locales(@test_locales),
       test.line in @tests do

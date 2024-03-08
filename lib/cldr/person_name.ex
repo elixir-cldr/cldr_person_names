@@ -616,6 +616,10 @@ defmodule Cldr.PersonName do
     {:ok, Keyword.put(options, :order, order)}
   end
 
+  # TODO Actually implement selecting the
+  # the right format from the list per
+  # https://www.unicode.org/reports/tr35/tr35-personNames.html#choose-a-namepattern
+
   defp select_format(formats, options) do
     keys = [:person_name, options[:order], options[:format], options[:usage], options[:formality]]
 
@@ -623,9 +627,9 @@ defmodule Cldr.PersonName do
       nil ->
         {:error, "No format found for options #{inspect(options)}"}
 
-      format ->
-        # IO.inspect format, label: inspect(keys)
-        {:ok, format}
+      format_list ->
+        # IO.inspect format_list, label: inspect(keys)
+        {:ok, hd(format_list)}
     end
   end
 

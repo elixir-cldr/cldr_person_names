@@ -71,21 +71,23 @@ defmodule Cldr.PersonName.Backend do
               only: [:initial, :initial_sequence]
             )
             |> Cldr.Map.deep_map(
-              fn {type, format} ->
-                format =
-                  Enum.map(Regex.split(~r/{.*}/uU, format, trim: true, include_captures: true), fn
-                    "{" <> field ->
-                      field
-                      |> String.trim_trailing("}")
-                      |> String.split("-")
-                      |> Enum.map(&Cldr.String.underscore/1)
-                      |> Enum.map(&String.to_atom/1)
+              fn {type, formats} ->
+                formats =
+                  Enum.map(formats, fn format ->
+                    Enum.map(Regex.split(~r/{.*}/uU, format, trim: true, include_captures: true), fn
+                      "{" <> field ->
+                        field
+                        |> String.trim_trailing("}")
+                        |> String.split("-")
+                        |> Enum.map(&Cldr.String.underscore/1)
+                        |> Enum.map(&String.to_atom/1)
 
-                    literal ->
-                      literal
+                      literal ->
+                        literal
+                    end)
                   end)
 
-                {type, format}
+                {type, formats}
               end,
               only: [:formal, :informal]
             )
@@ -104,6 +106,7 @@ defmodule Cldr.PersonName.Backend do
 
           locale_order = Map.new(given_order ++ surname_order)
           foreign_space_replacement = Map.get(locale_data, :foreign_space_replacement)
+          native_space_replacement = Map.get(locale_data, :native_space_replacement)
 
           def formats_for(unquote(locale_name)) do
             unquote(Macro.escape(formats))
@@ -111,6 +114,10 @@ defmodule Cldr.PersonName.Backend do
 
           def locale_order(unquote(locale_name)) do
             unquote(Macro.escape(locale_order))
+          end
+
+          def native_space_replacement(unquote(locale_name)) do
+            unquote(native_space_replacement)
           end
 
           def foreign_space_replacement(unquote(locale_name)) do

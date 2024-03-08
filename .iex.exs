@@ -14,6 +14,7 @@ import Cldr.LanguageTag.Sigil, only: :macros
 {:ok, ja_aq} = Cldr.validate_locale("ja-AQ", MyApp.Cldr)
 {:ok, he_aq} = Cldr.validate_locale("he-AQ", MyApp.Cldr)
 {:ok, zh_aq} = Cldr.validate_locale("zh-AQ", MyApp.Cldr)
+{:ok, es_mx} = Cldr.validate_locale("es-MX", MyApp.Cldr)
 {:ok, de} = Cldr.validate_locale("de", MyApp.Cldr)
 
 # name ; given; Mary Sue
@@ -237,5 +238,17 @@ ada = %PersonName{
   generation: "Jr",
   credentials: "MD DDS",
   locale: ja_aq
+}
+
+# name ; given; Juan
+# name ; given2; Luis Antonio
+# name ; surname; Rodríguez Ruiz
+# name ; locale; es_MX
+
+juan = %PersonName{
+  given_name: "Juan",
+  other_given_names: "Luis Antonio",
+  surname: "Rodríguez Ruiz",
+  locale: es_mx
 }
 
