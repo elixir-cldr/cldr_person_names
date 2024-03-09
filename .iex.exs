@@ -14,7 +14,11 @@ import Cldr.LanguageTag.Sigil, only: :macros
 {:ok, ja_aq} = Cldr.validate_locale("ja-AQ", MyApp.Cldr)
 {:ok, he_aq} = Cldr.validate_locale("he-AQ", MyApp.Cldr)
 {:ok, zh_aq} = Cldr.validate_locale("zh-AQ", MyApp.Cldr)
+{:ok, cs_aq} = Cldr.validate_locale("cs-AQ", MyApp.Cldr)
+{:ok, id_aq} = Cldr.validate_locale("id-AQ", MyApp.Cldr)
+
 {:ok, es_mx} = Cldr.validate_locale("es-MX", MyApp.Cldr)
+{:ok, es_us} = Cldr.validate_locale("es-US", MyApp.Cldr)
 {:ok, de} = Cldr.validate_locale("de", MyApp.Cldr)
 
 # name ; given; Mary Sue
@@ -22,30 +26,49 @@ import Cldr.LanguageTag.Sigil, only: :macros
 # name ; surname; Watson
 # name ; locale; en_AQ
 
-mary = %PersonName{given_name: "Mary Sue", other_given_names: "Hamish", surname: "Watson", locale: en_aq}
+mary = %PersonName{
+  given_name: "Mary Sue",
+  other_given_names: "Hamish",
+  surname: "Watson",
+  locale: en_aq
+}
 
 # name ; given; Käthe
 # name ; surname; Müller
 # name ; locale; ja_AQ
 
-kathe = %PersonName{given_name: "Käthe", surname: "Müller", locale: ja_aq}
+kathe = %PersonName{
+  given_name: "Käthe",
+  surname: "Müller",
+  locale: ja_aq
+}
 
 # name ; given; Irene
 # name ; surname; Adler
 # name ; locale; en_AQ
 
-irene = %PersonName{given_name: "Irene", surname: "Adler", locale: en_aq}
+irene = %PersonName{
+  given_name: "Irene",
+  surname: "Adler",
+  locale: en_aq
+}
 
 # name ; given; Sinbad
 # name ; locale; ja_AQ
 
-sinbad = %PersonName{given_name: "Sinbad", locale: ja_aq}
+sinbad = %PersonName{
+  given_name: "Sinbad",
+  locale: ja_aq
+}
 
 # nativeG
 # name ; given; Zendaya
 # name ; locale; en_AQ
 
-zendaya = %PersonName{given_name: "Zendaya", locale: en_aq}
+zendaya = %PersonName{
+  given_name: "Zendaya",
+  locale: en_aq
+}
 
 # nativeFull
 # name ; title; M.
@@ -71,14 +94,21 @@ jn = %PersonName{
 # name ; given; Adèle
 # name ; locale; fr_AQ
 
-adele = %PersonName{given_name: "Adèle", locale: fr_aq}
+adele = %PersonName{
+  given_name: "Adèle",
+  locale: fr_aq
+}
 
 # nativeG
 # name ; given; Iris
 # name l surnameL Falke
 # name ; locale; de
 
-iris = %PersonName{given_name: "Iris", surname: "Falke", locale: de}
+iris = %PersonName{
+  given_name: "Iris",
+  surname: "Falke",
+  locale: de
+}
 
 # nativeFull
 # name ; title; Dr.
@@ -108,7 +138,11 @@ paul = %PersonName{
 # name ; surname; Lemaître
 # name ; locale; ko_AQ
 
-adelaide = %PersonName{given_name: "Adélaïde", surname: "Lemaître", locale: ko_aq}
+adelaide = %PersonName{
+  given_name: "Adélaïde",
+  surname: "Lemaître",
+  locale: ko_aq
+}
 
 # nativeFull
 # name ; title; Sr.
@@ -136,19 +170,32 @@ pablo = %PersonName{
 # name ; surname; Ruiz
 # name ; locale; es_AQ
 
-rosa = %PersonName{given_name: "Rosa", other_given_names: "María", surname: "Ruiz", locale: es_aq}
+rosa = %PersonName{
+  given_name: "Rosa",
+  other_given_names: "María",
+  surname: "Ruiz",
+  locale: es_aq
+}
 
 # name ; given; Maria
 # name ; surname; Silva
 # name ; locale; pt_AQ
 
-maria = %PersonName{given_name: "Maria", surname: "Silva", locale: pt_aq}
+maria = %PersonName{
+  given_name: "Maria",
+  surname: "Silva",
+  locale: pt_aq
+}
 
 # name ; given; 一郎
 # name ; surname; 安藤
 # name ; locale; ja_AQ
 
-ichiro = %PersonName{given_name: "一郎", surname: "安藤", locale: ja_aq}
+ichiro = %PersonName{
+  given_name: "一郎",
+  surname: "安藤",
+  locale: ja_aq
+}
 
 # name ; given; יונתן
 # name ; given2; חיים
@@ -252,3 +299,95 @@ juan = %PersonName{
   locale: es_mx
 }
 
+# name ; title; Sr.
+# name ; given; Marcelo Miguel
+# name ; given-informal; Marce
+# name ; given2; Javier Ariel
+# name ; surname-core; Romero
+# name ; surname2; Pérez
+# name ; generation; Júnior
+# name ; credentials; Miembro del Parlamento
+# name ; locale; es_MX
+
+marcelo = %PersonName{
+  title: "Sr.",
+  given_name: "Marcelo Miguel",
+  informal_given_name: "Marce",
+  other_given_names: "Javier Ariel",
+  surname: "Romero",
+  other_surnames: "Pérez",
+  generation: "Júnior",
+  credentials: "Miembro del Parlamento",
+  locale: es_mx
+}
+
+# name ; given; Lucía
+# name ; surname; García Pérez
+# name ; locale; es_US
+
+lucia = %PersonName{
+  given_name: "Lucía",
+  surname: "García Pérez",
+  locale: es_us
+}
+
+# name ; given; Jana
+# name ; surname; Nováková
+# name ; locale; cs_AQ
+
+jana = %PersonName{
+  given_name: "Jana",
+  surname: "Nováková",
+  locale: cs_aq
+}
+
+# name ; given; Kate
+# name ; surname; Smith
+# name ; locale; ko_AQ
+
+kate = %PersonName{
+  given_name: "Kate",
+  surname: "Smith",
+  locale: ko_aq
+}
+
+# name ; title; paní
+# name ; given; Alexandra
+# name ; given-informal; Saša
+# name ; given2; Zuzana
+# name ; surname-core; Machová
+# name ; surname2; Ondřejová
+# name ; generation; st.
+# name ; credentials; Ph.D.
+# name ; locale; cs_AQ
+
+alexandra = %PersonName{
+  title: "paní",
+  given_name: "Alexandra",
+  informal_given_name: "Saša",
+  other_given_names: "Zuzana",
+  surname: "Machová",
+  other_surnames: "Ondřejová",
+  generation: "st.",
+  credentials: "Ph.D.",
+  locale: cs_aq
+}
+
+# nativeFull
+# name ; title; Bapak
+# name ; given; Dwi Putro
+# name ; given-informal; Dwi
+# name ; given2; bin
+# name ; surname-core; Adinata
+# name ; credentials; MP
+# name ; locale; id_AQ
+
+dwi = %PersonName{
+  title: "Bapak",
+  given_name: "Dwi Putro",
+  informal_given_name: "Dwi",
+  other_given_names: "bin",
+  surname: "Adinata",
+  credentials: "MP",
+  locale: id_aq
+}

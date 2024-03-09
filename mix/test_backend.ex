@@ -28,7 +28,14 @@ defmodule MyApp.Cldr do
       "nl",
       "af",
       "fi",
-      "id"
+      "id",
+      "es-US",
+      "es-MX",
+      "es-419",
+      "cs",
+      "th",
+      "lo",
+      "my"
     ],
     providers: [Cldr.PersonName]
 end

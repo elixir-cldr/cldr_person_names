@@ -129,7 +129,7 @@ defmodule Cldr.PersonName.Backend do
           formats_for(cldr_locale_name)
         end
 
-        def formats_for(locale) when is_binary(locale) do
+        def formats_for(locale) when is_binary(locale) or is_atom(locale) do
           with {:ok, locale} <- unquote(backend).validate_locale(locale) do
             formats_for(locale)
           end

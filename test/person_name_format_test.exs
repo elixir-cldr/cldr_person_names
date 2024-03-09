@@ -2,19 +2,34 @@ defmodule Cldr.PersonName.FormatTest do
   use ExUnit.Case, async: true
 
   @tests 1..1000
+
   @all_locales Cldr.PersonName.TestData.all_locales()
 
   @failing_locales [
-    :as, :ca, :cs, :es, :es_419, :es_MX, :es_US, :gl, :gu, :hi, :kn, :km, :he, :or, :si, :my, :te, :pa, :ml, :ne, :mr, :el, :ko
+    :as, :ca, :gl, :gu, :hi, :kn, :km, :he, :or, :si, :my, :te, :pa, :ml, :ne, :mr, :el, :ko
   ]
 
   @test_locales (@all_locales -- @failing_locales)
 
   # These all pass tests
-  @test_locales [:en, :it, :de, :fr, :da, :id, :nl, :pt_PT, :zh, :zh_Hant, :zh_Hant_HK, :ja, :ko]
+  @test_locales [
+    :en, :it, :de, :fr, :fr_CA, :da, :nl, :pt_PT,
+    :zh, :zh_Hant, :zh_Hant_HK,
+    :ja, :ko,
+    :id, :lo, :th,
+    :es, :es_MX, :es_419, :es_US
+  ]
+
+  @test_locales [
+    :ca
+  ]
+
+  # @test_locales [
+  #   :cs
+  # ]
 
   # These are work in progress
-  @test_locales [:es_MX]
+  # @test_locales []
 
   for test <- Cldr.PersonName.TestData.parse_locales(@test_locales),
       test.line in @tests do

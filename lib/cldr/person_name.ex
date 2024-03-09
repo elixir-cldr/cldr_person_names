@@ -58,7 +58,7 @@ defmodule Cldr.PersonName do
          {:ok, formats} <- formats(formatting_locale, name_locale, backend),
          {:ok, options} <- validate_options(formats, options),
          {:ok, options} <- determine_name_order(name, name_locale, backend, options),
-         {:ok, format} <- select_format(formats, options),
+         {:ok, format} <- select_format(name, formats, options),
          {:ok, name, format} <- adjust_for_mononym(name, format) do
       name
       |> interpolate_format(locale, format, formats)
@@ -115,8 +115,8 @@ defmodule Cldr.PersonName do
     name_language in [:ja, :zh, :yue] && formatting_language in [:ja, :zh, :yue]
   end
 
-  #
   # Interpolate the format
+  # https://www.unicode.org/reports/tr35/tr35-personNames.html#process-a-namepattern
   #
   # If one or more fields at the start of the pattern are empty, all fields and literal text before
   # the first populated field are omitted.
@@ -142,53 +142,166 @@ defmodule Cldr.PersonName do
     elements
     |> Enum.map(&interpolate_element(name, &1, locale, formats))
     |> remove_leading_emptiness()
+    # |> IO.inspect(label: "After leading emptiness")
     |> remove_trailing_emptiness()
+    # |> IO.inspect(label: "After trailing removal")
     |> remove_empty_fields()
     |> extract_values()
   end
 
-  defp remove_leading_emptiness([nil, element | rest]) when is_binary(element),
-    do: remove_leading_emptiness(rest)
+  # If one or more fields at the start of the pattern are empty, all fields and literal text before
+  # the first populated field are omitted. In this implementation, just remove the start of the
+  # list until we get to a value. Unlike the standard text (but consistent with ICU) a binary
+  # before the first populated field is ok.
 
-  defp remove_leading_emptiness([element, nil | rest]) when is_binary(element),
-    do: remove_leading_emptiness(rest)
+  def remove_leading_emptiness([{:field, value} | rest]), do: [{:field, value} | rest]
+  def remove_leading_emptiness([_first | rest]), do: remove_leading_emptiness(rest)
+  def remove_leading_emptiness([]), do: []
 
-  defp remove_leading_emptiness([nil | rest]),
-    do: remove_leading_emptiness(rest)
+  # If one or more fields at the end of the pattern are empty, all fields and literal text after
+  # the last populated field are omitted.
 
-  defp remove_leading_emptiness(rest),
-    do: rest
-
-  defp remove_trailing_emptiness(elements) do
+  def remove_trailing_emptiness(elements) do
     elements
     |> Enum.reverse()
-    |> remove_leading_emptiness()
+    |> maybe_remove_leading_emptiness()
     |> Enum.reverse()
   end
 
-  defp remove_empty_fields([{:value, element}, binary | rest]) when is_binary(binary) do
-    [{:value, element} | remove_empty_fields([binary | rest])]
+  def maybe_remove_leading_emptiness(elements) do
+    Enum.reduce_while(elements, nil, fn
+      # We found an empty element before any populated elements
+      # So remove the leading emptiness
+      nil, _acc ->
+        {:halt, remove_leading_emptiness(elements)}
+
+      # We found a populated element first
+      # So we don't remove emptiness
+      {:field, _value}, _acc ->
+        {:halt, elements}
+
+      # Keep looking for a populated or unpopulated
+      # field
+      _other, acc ->
+        {:cont, acc}
+    end)
   end
 
-  defp remove_empty_fields([nil, binary | rest]) when is_binary(binary) do
-    remove_empty_fields(rest)
+  # Processing from the start of the remaining pattern:
+  # https://www.unicode.org/reports/tr35/tr35-personNames.html#process-a-namepattern
+  #
+  #   If there are two or more empty fields separated only by literals, the fields and the literals
+  #   between them are removed.
+  #
+  #   If there is a single empty field, it is removed.
+  #
+  #   If the processing from step 3 results in two adjacent literals (call them A and B), they are
+  #   coalesced into one literal as follows:
+  #
+  #     If either is empty the result is the other one.
+  #     If B matches the end of A, then the result is A. So xyz + yz ⇒ xyz, and xyz + xyz ⇒ xyz.
+  #     Otherwise the result is A + B, further modified by replacing any sequence of two or more
+  #     white space characters by the first whitespace character.
+
+  #  The spec doens't say what to do with a sequence of binaries intersperesed
+  #  with unpopulated fields (nil).  Based upon the test cases this implementation:
+  #
+  #    1. Deletes an unpopulated field immediately after a populated field
+  #    2. Deletes an unpopulated field (nil) *and* a binary is the binary directly follows
+  #       the unpopulated field and the binary is whitespace.
+
+  # def remove_empty_fields([binary_1, nil, binary_2 | rest])
+  #     when is_binary(binary_1) and is_binary(binary_2) do
+  #   remove_empty_fields([binary_1 | rest])
+  # end
+
+  def remove_empty_fields([nil | rest]) do
+    case remove_up_to_nil(rest) do
+      [] -> remove_empty_fields(rest)
+      rest -> remove_empty_fields(rest)
+    end
   end
 
-  defp remove_empty_fields([{:value, element}, nil | rest]) do
-    remove_empty_fields([{:value, element} | rest])
+  def remove_empty_fields([first | rest]) when is_binary(first) do
+    case remove_empty_fields(rest) do
+      [binary | rest] when is_binary(binary) ->
+        [combine_binary(first, binary) | rest]
+
+      other ->
+        [first | other]
+    end
   end
 
-  defp remove_empty_fields([first | rest]) do
+  def remove_empty_fields([first | rest]) do
     [first | remove_empty_fields(rest)]
   end
 
-  defp remove_empty_fields([]) do
+  def remove_empty_fields([]) do
     []
+  end
+
+  # We found a populated value before another unpopulated one
+  # so that rule doesn't apply
+  defp remove_up_to_nil([{:field, _value} | _rest]),
+    do: []
+
+  # We found another unpopulated value to we are done
+  defp remove_up_to_nil([nil | rest]),
+    do: rest
+
+  # We found a binary so consume it
+  defp remove_up_to_nil([binary | rest]) when is_binary(binary),
+    do: remove_up_to_nil(rest)
+
+  #   If the processing from step 3 results in two adjacent literals (call them A and B), they are
+  #   coalesced into one literal as follows:
+  #
+  #     If either is empty the result is the other one.
+  #     If B matches the end of A, then the result is A. So xyz + yz ⇒ xyz, and xyz + xyz ⇒ xyz.
+  #     Otherwise the result is A + B, further modified by replacing any sequence of two or more
+  #     white space characters by the first whitespace character.
+
+  def combine_binary(first, ""), do: first
+  def combine_binary("", second), do: second
+  def combine_binary(first, first), do: first
+
+  def combine_binary(first, second) do
+    if String.ends_with?(first, second) do
+      first
+    else
+      remove_duplicate_whitespace(first <> second)
+    end
+    |> bodgy_fix_literal()
+  end
+
+  # FIXME This is here to make some test cases pass until
+  # either the data bug (id, es) is fixed or the spec is updated
+  # or I find more evidence of my idiocy.
+  # See https://unicode-org.atlassian.net/jira/software/c/projects/CLDR/issues/CLDR-17443
+
+  defp bodgy_fix_literal(string) do
+    if Regex.match?(~r/^\s+/u, string) && Regex.match?(~r/\s+$/u, string) do
+      @format_space
+    else
+      string
+    end
+  end
+
+  # Replace multiple whitespace with the first
+  # whitespace grapheme.
+  def remove_duplicate_whitespace(string) do
+    case Regex.named_captures(~r/(?<whitespace>\s+)/u, string) do
+      %{"whitespace" => whitespace} ->
+        replacement = String.first(whitespace)
+        String.replace(string, ~r/\s+/u, replacement)
+      nil ->
+        string
+    end
   end
 
   defp extract_values(elements) do
     Enum.map(elements, fn
-      {:value, element} -> element
+      {:field, value} -> value
       other -> other
     end)
   end
@@ -285,7 +398,7 @@ defmodule Cldr.PersonName do
       complete_surname
       |> :erlang.iolist_to_binary()
       |> String.first()
-      |> wrap(:value)
+      |> wrap(:field)
     end
   end
 
@@ -300,7 +413,7 @@ defmodule Cldr.PersonName do
     else
       complete_surname
       |> :erlang.iolist_to_binary()
-      |> wrap(:value)
+      |> wrap(:field)
     end
   end
 
@@ -362,7 +475,7 @@ defmodule Cldr.PersonName do
       _other, value ->
         value
     end)
-    |> wrap(:value)
+    |> wrap(:field)
   end
 
   defp format_surname(name, locale, [:initial | transforms], formats) do
@@ -616,11 +729,8 @@ defmodule Cldr.PersonName do
     {:ok, Keyword.put(options, :order, order)}
   end
 
-  # TODO Actually implement selecting the
-  # the right format from the list per
-  # https://www.unicode.org/reports/tr35/tr35-personNames.html#choose-a-namepattern
-
-  defp select_format(formats, options) do
+  defp select_format(name, formats, options) do
+    # IO.inspect formats, label: "Select format"
     keys = [:person_name, options[:order], options[:format], options[:usage], options[:formality]]
 
     case get_in(formats, keys) do
@@ -628,10 +738,91 @@ defmodule Cldr.PersonName do
         {:error, "No format found for options #{inspect(options)}"}
 
       format_list ->
-        # IO.inspect format_list, label: inspect(keys)
-        {:ok, hd(format_list)}
+        format = choose_format(name, format_list)
+        {:ok, format}
     end
   end
+
+  # Choose a namePattern
+  # https://www.unicode.org/reports/tr35/tr35-personNames.html#choose-a-namepattern
+  #
+  # To format a name, the fields in a namePattern are replaced with fields fetched from the
+  # PersonName Data Interface. The personName element can contain multiple namePattern elements.
+  # Choose one based on the fields in the input PersonName object that are populated:
+  #
+  # Find the set of patterns with the most populated fields.
+  #   If there is just one element in that set, use it.
+  #   Otherwise, among that set, find the set of patterns with the fewest unpopulated fields.
+  #   If there is just one element in that set, use it.
+  #   Otherwise, take the pattern that is alphabetically least. (This step should rarely happen,
+  #   and is only for producing a determinant result.)
+  #
+  # For example:
+  #
+  # Pattern A has 12 fields total, pattern B has 10 fields total, and pattern C has 8 fields total.
+  # Both patterns A and B can be populated with 7 fields from the input PersonName object, pattern
+  # C can be populated with only 3 fields from the input PersonName object.
+  # Pattern C is discarded, because it has the least number of populated name fields.
+  # Out of the remaining patterns A and B, pattern B wins, because it has only 3 unpopulated fields
+  # compared to pattern A.
+
+  # Only one format (most common) so return it.
+  defp choose_format(_name, [format]) do
+    format
+  end
+
+  # Score each format and arrange it in an order
+  # such that term sorting produces the required
+  # format.
+
+  defp choose_format(name, formats) do
+    # IO.inspect formats, label: "Candidate formats"
+    {_, _, format} =
+      Enum.reduce(formats, [], fn format, acc ->
+        {fields, populated} = score(name, format)
+        unpopulated = fields - populated
+
+        [{populated, -unpopulated, format} | acc]
+      end)
+      |> Enum.sort(:desc)
+      # |> IO.inspect(label: "Scored formats")
+      |> hd()
+
+    format
+  end
+
+  # Return the number fields present (they are a binary) and
+  # the number of fields in the format.
+
+  defp score(name, format) do
+    Enum.reduce(format, {0, 0}, fn
+      field, {fields, populated} when is_binary(field) ->
+        {fields, populated}
+
+      field, {fields, populated} ->
+        fields = fields + 1
+        if filled?(field, name), do: {fields, populated + 1}, else: {fields, populated}
+    end)
+  end
+
+  defp filled?([:title | _], %{title: title}),
+    do: is_binary(title)
+  defp filled?([:given2 | _], %{other_given_names: other_given_names}),
+    do: is_binary(other_given_names)
+  defp filled?([:given, :informal | _], name),
+    do: is_binary(name.informal_given_name) || is_binary(name.given_name)
+  defp filled?([:given | _], %{given_name: given_name}),
+    do: is_binary(given_name)
+  defp filled?([:surname, :prefix | _], %{surname_prefix: surname_prefix}),
+    do: is_binary(surname_prefix)
+  defp filled?([:surname | _], %{surname: surname}),
+    do: is_binary(surname)
+  defp filled?([:surname2 | _], %{other_surnames: other_surnames}),
+    do: is_binary(other_surnames)
+  defp filled?([:generation | _], %{generation: generation}),
+    do: is_binary(generation)
+  defp filled?([:credentials | _], %{credentials: credentials}),
+    do: is_binary(credentials)
 
   defp wrap(term, atom) do
     {atom, term}
