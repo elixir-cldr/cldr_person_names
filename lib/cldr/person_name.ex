@@ -24,6 +24,13 @@ defmodule Cldr.PersonName do
   @default_order :given_first
   @default_usage :addressing
 
+  # These languages will have a different upcase
+  # treatment than the default.
+  # Taken from https://www.medicaldirector.com/help/topics-clinical/Language_Codes.htm
+  # Turkish, Azeri, Tatar, Turkmen, Uygur, Uzbek
+  @turkic_languages [:tr, :az, :tt, :tk, :ug, :uz]
+
+  # ASCII space used in the templates
   @format_space " "
 
   import Kernel, except: [to_string: 1]
@@ -397,7 +404,7 @@ defmodule Cldr.PersonName do
     else
       complete_surname
       |> :erlang.iolist_to_binary()
-      |> String.first()
+      |> monogram(locale)
       |> wrap(:field)
     end
   end
@@ -461,13 +468,15 @@ defmodule Cldr.PersonName do
   defp format_element(value, locale, transforms, formats) do
     Enum.reduce(transforms, value, fn
       :all_caps, value ->
-        String.upcase(value)
+        language_mode = mode_from_locale(locale)
+        String.upcase(value, language_mode)
 
       :monogram, value ->
-        String.first(value)
+        monogram(value, locale)
 
       :initial_cap, value ->
-        String.capitalize(value)
+        language_mode = mode_from_locale(locale)
+        String.capitalize(value, language_mode)
 
       :initial, value ->
         initialize_value(value, locale, transforms, formats)
@@ -504,7 +513,7 @@ defmodule Cldr.PersonName do
 
     value
     |> Unicode.String.split(break: :word, trim: true, locale: locale)
-    |> Enum.reduce([], &initialize_word(&1, formats.initial, &2, retain_punctuation?))
+    |> Enum.reduce([], &initialize_word(&1, locale, formats.initial, &2, retain_punctuation?))
     |> Enum.reverse()
     |> join_initials(formats)
     |> :erlang.iolist_to_binary()
@@ -513,23 +522,30 @@ defmodule Cldr.PersonName do
   # Starts with a letter, then letter or punctuation
   @word_or_punctuation Unicode.Regex.compile!("^\\p{L}[\\p{L}\\p{P}]*$")
 
-  defp initialize_word(word, initial_template, acc, false = _retain_punctuation?) do
+  # If we aren't retaining punctuation, then we discard
+  # any punctuation.
+
+  defp initialize_word(word, locale, initial_template, acc, false = _retain_punctuation?) do
     if Unicode.Regex.match?(@word_or_punctuation, word) do
-      add_initial(word, initial_template, acc)
+      add_initial(word, locale, initial_template, acc)
     else
       acc
     end
   end
 
-  defp initialize_word(word, initial_template, acc, true = _retain_punctuation?) do
+  # If we are keeping punctuation then its added, but in a way
+  # that we know its a literal, not an initial. Thats important
+  # later on when we join things up.
+
+  defp initialize_word(word, locale, initial_template, acc, true = _retain_punctuation?) do
     if Unicode.Regex.match?(@word_or_punctuation, word) do
-      add_initial(word, initial_template, acc)
+      add_initial(word, locale, initial_template, acc)
     else
       add_to_list(word, acc)
     end
   end
 
-  defp add_initial(word, initial_template, acc) do
+  defp add_initial(word, _locale, initial_template, acc) do
     word
     |> String.first()
     |> Cldr.Substitution.substitute(initial_template)
@@ -539,6 +555,35 @@ defmodule Cldr.PersonName do
   defp add_to_list(element, list) do
     [element | list]
   end
+
+  # TODO Is this correct?
+  # Here we are just removing any diacritic on
+  # a letter which seems to match the test cases.
+
+  defp monogram(word, %{cldr_locale_name: locale}) do
+    monogram(word, locale)
+  end
+
+  defp monogram(word, :el) do
+    word
+    |> String.first()
+    |> Unicode.unaccent()
+  end
+
+  defp monogram(word, _locale) do
+    String.first(word)
+  end
+
+  # upacase, downcase and titlecase have specific
+  # handling for greek and turkic languages.
+
+  defp mode_from_locale(%{cldr_locale_name: locale}) do
+    mode_from_locale(locale)
+  end
+
+  defp mode_from_locale(:el), do: :greek
+  defp mode_from_locale(locale) when locale in @turkic_languages, do: :turkic
+  defp mode_from_locale(_), do: :default
 
   #
   # Helpers
@@ -780,7 +825,6 @@ defmodule Cldr.PersonName do
   # format.
 
   defp choose_format(name, formats) do
-    # IO.inspect formats, label: "Candidate formats"
     {_populated, _unpopulated, _priority, format} =
       Enum.reduce(formats, [], fn {priority, format}, acc ->
         {fields, populated} = score(name, format)

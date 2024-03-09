@@ -446,3 +446,27 @@ marie_agnes = %PersonName{
   surname: "Gilot",
   locale: fr_aq
 }
+
+# name ; title; Καθ. δρ.
+# name ; given; Άντα Κορνέλια
+# name ; given-informal; Νιλ
+# name ; given2; Σέσαρ Μαρτίν
+# name ; surname-prefix; φον
+# name ; surname-core; Μπριλ
+# name ; surname2; Γκονθάλεθ Δομίνγκο
+# name ; generation; Τζούνιορ
+# name ; credentials; Δρ.Ι. Δρ.Χ.Ο
+# name ; locale; ja_AQ
+
+cornelia = %PersonName{
+  title: "Καθ. δρ.",
+  given_name: "Άντα Κορνέλια",
+  informal_given_name: "Νιλ",
+  other_given_names: "Σέσαρ Μαρτίν",
+  surname_prefix: "φον",
+  surname: "Μπριλ",
+  other_surnames: "Palol",
+  generation: "Τζούνιορ",
+  credentials: "Δρ.Ι. Δρ.Χ.Ο",
+  locale: ja_aq
+}
