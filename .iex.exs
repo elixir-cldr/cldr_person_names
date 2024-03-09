@@ -16,6 +16,7 @@ import Cldr.LanguageTag.Sigil, only: :macros
 {:ok, zh_aq} = Cldr.validate_locale("zh-AQ", MyApp.Cldr)
 {:ok, cs_aq} = Cldr.validate_locale("cs-AQ", MyApp.Cldr)
 {:ok, id_aq} = Cldr.validate_locale("id-AQ", MyApp.Cldr)
+{:ok, ca_aq} = Cldr.validate_locale("ca-AQ", MyApp.Cldr)
 
 {:ok, es_mx} = Cldr.validate_locale("es-MX", MyApp.Cldr)
 {:ok, es_us} = Cldr.validate_locale("es-US", MyApp.Cldr)
@@ -390,4 +391,58 @@ dwi = %PersonName{
   surname: "Adinata",
   credentials: "MP",
   locale: id_aq
+}
+
+# name ; given; Gal·la
+# name ; surname; Roig
+# name ; locale; ca_AQ
+
+gal = %PersonName{
+  given_name: "Gal·la",
+  surname: "Roig",
+  locale: ca_aq
+}
+
+# name ; given; Jacqueline
+# name ; surname; Beauchêne
+# name ; locale; ko_AQ
+
+jacqueline = %PersonName{
+  given_name: "Jacqueline",
+  surname: "Beauchêne",
+  locale: ko_aq
+}
+
+# name ; title; Sr.
+# name ; given; Josep Antoni
+# name ; given-informal; Pep
+# name ; given2; Carles Joan
+# name ; surname-core; Lloret
+# name ; surname2; Palol
+# name ; generation; II
+# name ; credentials; Excm.
+# name ; locale; ca_AQ
+
+josep = %PersonName{
+  title: "Sr.",
+  given_name: "Josep Antoni",
+  informal_given_name: "Pep",
+  other_given_names: "Carles Joan",
+  surname: "Lloret",
+  other_surnames: "Palol",
+  generation: "II",
+  credentials: "Excm",
+  locale: ca_aq
+}
+
+# name ; given; Marie-Agnès
+# name ; given2; Suzanne
+# name ; surname; Gilot
+# name ; locale; fr_AQ
+
+marie_agnes = %PersonName{
+  given_name: "Marie-Agnès",
+  other_given_names: "Suzanne",
+  surname: "Gilot",
+  locale: fr_aq
 }

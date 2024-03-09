@@ -6,27 +6,42 @@ defmodule Cldr.PersonName.FormatTest do
   @all_locales Cldr.PersonName.TestData.all_locales()
 
   @failing_locales [
-    :as, :ca, :gl, :gu, :hi, :kn, :km, :he, :or, :si, :my, :te, :pa, :ml, :ne, :mr, :el, :ko
+    :gu, :hi, :hi_Latn, :km, :kn, :kok, :ml, :mr, :my, :ne, :or,
+    :pa, :si, :ta, :te, :as,
+    # Synonums for :zh - fix in ex_cldr_strings
+    :yue_Hans, :yue,
+    # Special greek initialization rule?
+    :el,
+    # Data error?
+    :es_US
   ]
 
   @test_locales (@all_locales -- @failing_locales)
 
   # These all pass tests
   @test_locales [
-    :en, :it, :de, :fr, :fr_CA, :da, :nl, :pt_PT,
+    :am, :ar, :az, :be, :bg, :bn,
+    :chr, :cs, :cy,
+    :dsb,
+    :en, :en_AU, :en_CA, :en_GB, :en_IN,
+    :it, :de, :fr, :fr_CA, :da, :nl, :pt_PT, :ca, :cs,
+    :et, :eu, :fa, :fi, :ga, :gd, :gl,
+    :ha, :ha_NE, :he, :hr, :hsb, :hu, :hy,
+    :ig, :is, :jv, :ka, :kk, :ko, :ky,
+    :lo, :lv, :mk, :mn, :ms, :nn, :no,
+    :pl, :ps, :pt, :qu, :ro, :ru,
+    :sc, :sd, :sk, :sl, :so, :sq,
+    :sr_Cyrl_BA, :sr_Latn_BA, :sr_Latn, :sr,
+    :sv, :sw_KE, :sw,
+    :tg, :ti, :tk, :tr,
+    :uk, :ur, :uz, :vi,
+    :wo, :yo_BJ, :zu,
     :zh, :zh_Hant, :zh_Hant_HK,
     :ja, :ko,
     :id, :lo, :th,
-    :es, :es_MX, :es_419, :es_US
+    :es, :es_MX, :es_419
   ]
-
-  @test_locales [
-    :ca
-  ]
-
-  # @test_locales [
-  #   :cs
-  # ]
+  |> Enum.uniq()
 
   # These are work in progress
   # @test_locales []

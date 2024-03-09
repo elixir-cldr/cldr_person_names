@@ -142,11 +142,10 @@ defmodule Cldr.PersonName do
     elements
     |> Enum.map(&interpolate_element(name, &1, locale, formats))
     |> remove_leading_emptiness()
-    # |> IO.inspect(label: "After leading emptiness")
     |> remove_trailing_emptiness()
-    # |> IO.inspect(label: "After trailing removal")
     |> remove_empty_fields()
     |> extract_values()
+    # |> dbg
   end
 
   # If one or more fields at the start of the pattern are empty, all fields and literal text before
@@ -281,6 +280,7 @@ defmodule Cldr.PersonName do
 
   defp bodgy_fix_literal(string) do
     if Regex.match?(~r/^\s+/u, string) && Regex.match?(~r/\s+$/u, string) do
+      # String.trim_leading(string)
       @format_space
     else
       string
@@ -510,8 +510,11 @@ defmodule Cldr.PersonName do
     |> :erlang.iolist_to_binary()
   end
 
+  # Starts with a letter, then letter or punctuation
+  @word_or_punctuation Unicode.Regex.compile!("^\\p{L}[\\p{L}\\p{P}]*$")
+
   defp initialize_word(word, initial_template, acc, false = _retain_punctuation?) do
-    if Unicode.alphabetic?(word) do
+    if Unicode.Regex.match?(@word_or_punctuation, word) do
       add_initial(word, initial_template, acc)
     else
       acc
@@ -519,7 +522,7 @@ defmodule Cldr.PersonName do
   end
 
   defp initialize_word(word, initial_template, acc, true = _retain_punctuation?) do
-    if Unicode.alphabetic?(word) do
+    if Unicode.Regex.match?(@word_or_punctuation, word) do
       add_initial(word, initial_template, acc)
     else
       add_to_list(word, acc)
@@ -739,6 +742,7 @@ defmodule Cldr.PersonName do
 
       format_list ->
         format = choose_format(name, format_list)
+        # IO.inspect format, label: "Selected format"
         {:ok, format}
     end
   end
@@ -767,7 +771,7 @@ defmodule Cldr.PersonName do
   # compared to pattern A.
 
   # Only one format (most common) so return it.
-  defp choose_format(_name, [format]) do
+  defp choose_format(_name, [{_priority, format}]) do
     format
   end
 
@@ -777,14 +781,14 @@ defmodule Cldr.PersonName do
 
   defp choose_format(name, formats) do
     # IO.inspect formats, label: "Candidate formats"
-    {_, _, format} =
-      Enum.reduce(formats, [], fn format, acc ->
+    {_populated, _unpopulated, _priority, format} =
+      Enum.reduce(formats, [], fn {priority, format}, acc ->
         {fields, populated} = score(name, format)
         unpopulated = fields - populated
 
-        [{populated, -unpopulated, format} | acc]
+        [{-populated, unpopulated, priority, format} | acc]
       end)
-      |> Enum.sort(:desc)
+      |> Enum.sort(:asc)
       # |> IO.inspect(label: "Scored formats")
       |> hd()
 

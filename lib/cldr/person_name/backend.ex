@@ -73,7 +73,9 @@ defmodule Cldr.PersonName.Backend do
             |> Cldr.Map.deep_map(
               fn {type, formats} ->
                 formats =
-                  Enum.map(formats, fn format ->
+                  formats
+                  |> Enum.sort()
+                  |> Enum.map(fn format ->
                     Enum.map(Regex.split(~r/{.*}/uU, format, trim: true, include_captures: true), fn
                       "{" <> field ->
                         field
@@ -86,6 +88,8 @@ defmodule Cldr.PersonName.Backend do
                         literal
                     end)
                   end)
+                  |> Enum.with_index()
+                  |> Enum.map(fn {k, v} -> {v, k} end)
 
                 {type, formats}
               end,
