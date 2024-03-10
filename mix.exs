@@ -40,9 +40,11 @@ defmodule Cldr.PersonName.Mixfile do
     [
       # {:ex_cldr, "~> 2.38"},
       {:ex_cldr, path: "../cldr", override: true},
+
       {:unicode, "~> 1.19"},
-      {:unicode_string, path: "../unicode_string"},
-      # {:unicode_string, "~> 1.0"},
+
+      # {:unicode_string, path: "../unicode_string"},
+      {:unicode_string, "~> 1.4"},
 
       {:ex_doc, "~> 0.18", optional: true, runtime: false},
       {:jason, "~> 1.0", optional: true},
