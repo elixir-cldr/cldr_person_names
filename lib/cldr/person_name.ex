@@ -168,46 +168,57 @@ defmodule Cldr.PersonName do
   @behaviour __MODULE__
 
   @impl Cldr.PersonName
+  @doc false
   def title(%__MODULE__{title: title}),
     do: title
 
   @impl Cldr.PersonName
+  @doc false
   def given_name(%__MODULE__{given_name: given_name}),
     do: given_name
 
   @impl Cldr.PersonName
+  @doc false
   def other_given_names(%__MODULE__{other_given_names: other_given_names}),
     do: other_given_names
 
   @impl Cldr.PersonName
+  @doc false
   def informal_given_name(%__MODULE__{informal_given_name: informal_given_name}),
     do: informal_given_name
 
   @impl Cldr.PersonName
+  @doc false
   def surname_prefix(%__MODULE__{surname_prefix: surname_prefix}),
     do: surname_prefix
 
   @impl Cldr.PersonName
+  @doc false
   def surname(%__MODULE__{surname: surname}),
     do: surname
 
   @impl Cldr.PersonName
+  @doc false
   def other_surnames(%__MODULE__{other_surnames: other_surnames}),
     do: other_surnames
 
   @impl Cldr.PersonName
+  @doc false
   def generation(%__MODULE__{generation: generation}),
     do: generation
 
   @impl Cldr.PersonName
+  @doc false
   def credentials(%__MODULE__{credentials: credentials}),
     do: credentials
 
   @impl Cldr.PersonName
+  @doc false
   def locale(%__MODULE__{locale: locale}),
     do: locale
 
   @impl Cldr.PersonName
+  @doc false
   def preferred_order(%__MODULE__{preferred_order: preferred_order}),
     do: preferred_order
 
