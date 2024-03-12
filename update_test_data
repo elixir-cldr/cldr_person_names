@@ -9,4 +9,4 @@ export EX_CLDR_PERSON_NAMES="${EX_CLDR_PERSON_NAMES:=$HOME/Development/cldr_pers
 export CLDR_REPO="${CLDR_REPO:=$HOME/Development/cldr_repo}"
 [ ! -d $CLDR_REPO ] && { echo "Unicode CLDR repository $CLDR_REPO was not found."; exit 1; }
 
-cp -R $CLDR_REPO/common/testData/personNameTest $EX_CLDR_PERSON_NAMES/test/support/person_name_test_data
+cp -R $CLDR_REPO/common/testData/personNameTest/* $EX_CLDR_PERSON_NAMES/test/support/person_name_test_data
