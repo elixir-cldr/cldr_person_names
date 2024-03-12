@@ -8,7 +8,7 @@ defmodule Cldr.PersonName.Mixfile do
       app: :ex_cldr_person_names,
       version: @version,
       docs: docs(),
-      elixir: "~> 1.10",
+      elixir: "~> 1.11",
       name: "Cldr Lists",
       source_url: "https://github.com/elixir-cldr/cldr_person_names",
       description: description(),
@@ -42,8 +42,6 @@ defmodule Cldr.PersonName.Mixfile do
       {:ex_cldr, path: "../cldr", override: true},
 
       {:unicode, "~> 1.19"},
-
-      # {:unicode_string, path: "../unicode_string"},
       {:unicode_string, "~> 1.4"},
 
       {:ex_doc, "~> 0.18", optional: true, runtime: false},

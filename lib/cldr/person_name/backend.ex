@@ -15,6 +15,7 @@ defmodule Cldr.PersonName.Backend do
         end
 
         alias Cldr.PersonName
+        alias Cldr.PersonName.Formatter
         alias Cldr.Substitution
         alias Cldr.Locale
 
@@ -31,8 +32,8 @@ defmodule Cldr.PersonName.Backend do
 
 
         """
-        @spec to_iodata(PersonName.t(), PersonName.options()) ::
-                {:ok, String.t()} | {:error, {module(), String.t()}}
+        @spec to_iodata(name :: Cldr.PersonName.t(), options :: Formatter.format_options()) ::
+          {:ok, :erlang.iodata()} | {:error, Cldr.PersonName.error_message()}
 
         def to_iodata(%PersonName{} = name, options \\ []) do
           options = Keyword.put(options, :backend, unquote(backend))
@@ -46,7 +47,9 @@ defmodule Cldr.PersonName.Backend do
         ## Examples
 
         """
-        @spec to_iodata!(Cldr.PersonName.t(), Keyword.t()) :: String.t() | no_return()
+        @spec to_iodata!(name :: Cldr.PersonName.t(), options :: Formatter.format_options()) ::
+          :erlang.iodata() | no_return()
+
         def to_iodata!(list, options \\ []) do
           case to_iodata(list, options) do
             {:error, {exception, message}} ->
