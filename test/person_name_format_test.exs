@@ -17,37 +17,24 @@ defmodule Cldr.PersonName.FormatTest do
 
   # These all pass tests - 93 of them
   @test_locales [
-    :am, :ar, :az, :be, :bg, :bn,
-    :chr, :cs, :cy,
-    :dsb,
-    :en, :en_AU, :en_CA, :en_GB, :en_IN,
-    :it, :de, :fr, :fr_CA, :da, :nl, :pt_PT, :ca, :cs,
-    :el, :et, :eu, :fa, :fi, :ga, :gd, :gl,
-    :ha, :ha_NE, :he, :hr, :hsb, :hu, :hy,
-    :ig, :is, :jv, :ka, :kk, :ko, :ky,
-    :lo, :lv, :mk, :mn, :ms, :nn, :no,
-    :pl, :ps, :pt, :qu, :ro, :ru,
-    :sc, :sd, :sk, :sl, :so, :sq,
-    :sr_Cyrl_BA, :sr_Latn_BA, :sr_Latn, :sr,
-    :sv, :sw_KE, :sw,
-    :tg, :ti, :tk, :tr,
-    :uk, :ur, :uz, :vi,
-    :wo, :yo_BJ, :zu,
-    :zh, :zh_Hant, :zh_Hant_HK, :yue_Hans, :yue,
-    :ja, :ko,
-    :id, :lo, :th,
-    :es, :es_MX, :es_419
+    :am, :ar, :az, :be, :bg, :bn, :ca, :chr, :cs, :cy, :da, :de, :dsb, :el, :en,
+    :en_AU, :en_CA, :en_GB, :en_IN, :es, :es_419, :es_MX, :et, :eu, :fa, :fi, :fr,
+    :fr_CA, :ga, :gd, :gl, :ha, :ha_NE, :he, :hr, :hsb, :hu, :hy, :id, :ig, :is,
+    :it, :ja, :jv, :ka, :kk, :ko, :ky, :lo, :lv, :mk, :mn, :ms, :nl, :nn, :no, :pl,
+    :ps, :pt, :pt_PT, :qu, :ro, :ru, :sc, :sd, :sk, :sl, :so, :sq, :sr,
+    :sr_Cyrl_BA, :sr_Latn, :sr_Latn_BA, :sv, :sw, :sw_KE, :tg, :th, :ti, :tk, :tr,
+    :uk, :ur, :uz, :vi, :wo, :yo_BJ, :yue, :yue_Hans, :zh, :zh_Hant, :zh_Hant_HK,
+    :zu
   ]
-  |> Enum.uniq()
 
   # These are work in progress
-  @test_locales [
-    :gu, :hi, :hi_Latn, :km, :kn, :kok, :ml, :mr, :my, :ne, :or,
-    :pa, :si, :ta, :te, :as,
-
-    # Data error?
-    :es_US
-  ]
+  # @test_locales [
+  #   :gu, :hi, :hi_Latn, :km, :kn, :kok, :ml, :mr, :my, :ne, :or,
+  #   :pa, :si, :ta, :te, :as,
+  #
+  #   # Data error?
+  #   :es_US
+  # ]
 
   for test <- Cldr.PersonName.TestData.parse_locales(@test_locales),
       test.line in @tests do
