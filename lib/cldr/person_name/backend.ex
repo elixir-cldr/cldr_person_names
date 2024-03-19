@@ -32,6 +32,29 @@ defmodule Cldr.PersonName.Backend do
 
 
         """
+        @spec to_string(name :: Cldr.PersonName.t(), options :: Formatter.format_options()) ::
+          {:ok, binary()} | {:error, Cldr.PersonName.error_message()}
+
+        def to_string(%PersonName{} = name, options \\ []) do
+          case to_iodata(name, options) do
+            {:ok, iodata} -> {:ok, :erlang.iolist_to_binary(iodata)}
+            {:error, reason} -> {:error, reason}
+          end
+        end
+
+        @doc """
+        Formats a person name.
+
+        ## Arguments
+
+
+        ## Options
+
+
+        ## Examples
+
+
+        """
         @spec to_iodata(name :: Cldr.PersonName.t(), options :: Formatter.format_options()) ::
           {:ok, :erlang.iodata()} | {:error, Cldr.PersonName.error_message()}
 
