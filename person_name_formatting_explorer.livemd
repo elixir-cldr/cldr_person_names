@@ -1,0 +1,98 @@
+# Person Name Formatting Explorer
+
+```elixir
+Mix.install(
+  [
+    {:ex_cldr_person_names, github: "elixir-cldr/cldr_person_names"},
+    :jason,
+    :kino
+  ],
+  config: [
+    ex_cldr: [default_backend: MyApp.Cldr]
+  ],
+  force: true
+)
+```
+
+## Formatting Parameters
+
+```elixir
+locale =
+  Kino.Input.select("Locale",
+    en: "English",
+    fr: "French",
+    ja: "Japanese",
+    zh: "Chinese"
+  )
+```
+
+```elixir
+format =
+  Kino.Input.select("Format",
+    medium: "Medium",
+    short: "Short",
+    long: "Long"
+  )
+```
+
+```elixir
+name_order =
+  Kino.Input.select("Name order",
+    given_first: "Given name first",
+    surname_first: "Surname first",
+    sorting: "Sorted order"
+  )
+```
+
+```elixir
+usage =
+  Kino.Input.select("Usage",
+    addressing: "Addressing a person",
+    referring: "Referring to a person",
+    monogram: "Monogram"
+  )
+```
+
+```elixir
+formality =
+  Kino.Input.select("Formality",
+    formal: "Formal",
+    informal: "Informal"
+  )
+```
+
+## Selecting a name to format
+
+```elixir
+random = Cldr.PersonName.Names.random()
+
+names =
+  Cldr.PersonName.Names.names()
+  |> Enum.sort()
+  |> Enum.map(fn {k, v} -> {v, to_string(k)} end)
+
+names = [{random, "random"} | names]
+name = Kino.Input.select("Name to format", names)
+```
+
+```elixir
+name = Kino.Input.read(name)
+```
+
+## Format the name
+
+```elixir
+locale = Kino.Input.read(locale)
+name_order = Kino.Input.read(name_order)
+format = Kino.Input.read(format)
+usage = Kino.Input.read(usage)
+formality = Kino.Input.read(formality)
+
+MyApp.Cldr.PersonName.to_string(name,
+  format: format,
+  usage: usage,
+  locale: locale,
+  order: name_order,
+  formality: formality
+)
+```
