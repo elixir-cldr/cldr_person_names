@@ -96,3 +96,32 @@ MyApp.Cldr.PersonName.to_string(name,
   formality: formality
 )
 ```
+
+## Formatting with all options
+
+```elixir
+all_formats =
+  for format <- [:short, :medium, :long],
+      usage <- [:addressing, :referring],
+      order <- [:given_first, :surname_first, :sorting],
+      formality <- [:formal, :informal] do
+    {:ok, formatted_name} =
+      MyApp.Cldr.PersonName.to_string(name,
+        format: format,
+        usage: usage,
+        locale: locale,
+        order: name_order,
+        formality: formality
+      )
+
+    %{
+      "Format" => format,
+      "Usage" => usage,
+      "Name order" => order,
+      "Formality" => formality,
+      "Formatted" => formatted_name
+    }
+  end
+
+Kino.DataTable.new(all_formats, keys: ["Format", "Usage", "Name order", "Formality", "Formatted"])
+```
