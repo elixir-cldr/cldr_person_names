@@ -125,3 +125,7 @@ all_formats =
 
 Kino.DataTable.new(all_formats, keys: ["Format", "Usage", "Name order", "Formality", "Formatted"])
 ```
+
+```elixir
+Mix.env()
+```
