@@ -3,7 +3,7 @@
 ```elixir
 Mix.install(
   [
-    {:ex_cldr_person_names, github: "elixir-cldr/cldr_person_names"},
+    {:ex_cldr_person_names, github: "elixir-cldr/cldr_person_names", env: :dev},
     :jason,
     :kino
   ],
