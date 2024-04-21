@@ -38,8 +38,7 @@ defmodule Cldr.PersonName.Mixfile do
 
   defp deps do
     [
-      {:ex_cldr, github: "elixir-cldr/cldr-v2.38.0-rc.0", override: true},
-      # {:ex_cldr, "~> 2.38"},
+      {:ex_cldr, "~> 2.38"},
       # {:ex_cldr, path: "../cldr", override: true},
 
       {:unicode, "~> 1.19"},
