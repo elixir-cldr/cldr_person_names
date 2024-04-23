@@ -1,7 +1,9 @@
 # Cldr for Formatting Person Names
-![Build Status](http://sweatbox.noexpectations.com.au:8080/buildStatus/icon?job=cldr_person_names)
+
+![Build status](https://github.com/elixir-cldr/cldr_person_names/actions/workflows/ci.yml/badge.svg)
 [![Hex.pm](https://img.shields.io/hexpm/v/ex_cldr_person_names.svg)](https://hex.pm/packages/ex_cldr_person_names)
 [![Hex.pm](https://img.shields.io/hexpm/dw/ex_cldr_person_names.svg?)](https://hex.pm/packages/ex_cldr_person_names)
+[![Hex.pm](https://img.shields.io/hexpm/dt/ex_cldr_person_names.svg?)](https://hex.pm/packages/ex_cldr_person_names)
 [![Hex.pm](https://img.shields.io/hexpm/l/ex_cldr_person_names.svg)](https://hex.pm/packages/ex_cldr_person_names)
 
 ## Introduction and Getting Started
