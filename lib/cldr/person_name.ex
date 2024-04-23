@@ -1,5 +1,6 @@
 defmodule Cldr.PersonName do
   @readme Path.expand("README.md")
+  @external_resource @readme
   @moduledoc @readme |> File.read!() |> String.split("<!-- Split --->") |> List.last() |> String.trim()
 
   import Kernel, except: [to_string: 1]
@@ -8,7 +9,7 @@ defmodule Cldr.PersonName do
   @doc "Return the title as a `t:String.t/0` or `nil` for the given struct"
   @callback title(name :: struct()) :: String.t() | nil
 
-  @doc "Return the given name as a stringor nil for the given struct"
+  @doc "Return the given name as a `t:String.t/0` or `nil` for the given struct"
   @callback given_name(name :: struct()) :: String.t() | nil
 
   @doc "Return the informal given name as a `t:String.t/0` or `nil` for the given struct"
@@ -98,6 +99,9 @@ defmodule Cldr.PersonName do
     default is `nil`.
 
   * `:informal_given_name` is any `t:String.t/0` or `nil`. The
+    default is `nil`.
+
+  * `:surname_prefix` is any `t:String.t/0` or `nil`. The
     default is `nil`.
 
   * `:surname` is any `t:String.t/0` or `nil`. The
@@ -539,8 +543,9 @@ defmodule Cldr.PersonName do
   end
 
   # A name needs only a given name to be minimally viable.
-  @string_attributes [:title, :given_name, :other_given_names, :surname, :other_surnames, :generation, :credentials]
-  @all_attributes @string_attributes ++ [:locale, :backend, :name_order]
+  @non_string_attributes [:locale, :backend, :preferred_order]
+  @string_attributes Keyword.keys(@person_name) -- @non_string_attributes
+  @all_attributes @string_attributes ++ @non_string_attributes
   @valid_name_order Formatter.valid_name_order()
 
   defp validate_name(attributes) when is_list(attributes) do
@@ -549,8 +554,8 @@ defmodule Cldr.PersonName do
         {attribute, value}, acc when attribute in @string_attributes and is_binary(value) ->
           {:cont, Map.put(acc, attribute, value)}
 
-        {attribute, value}, acc when attribute in @string_attributes and is_nil(value) ->
-          {:cont, Map.put(acc, attribute, value)}
+        {attribute, nil}, acc when attribute in @all_attributes  ->
+          {:cont, Map.put(acc, attribute, nil)}
 
         {:locale, %Cldr.LanguageTag{} = locale}, acc ->
            {:cont, Map.put(acc, :locale, locale)}
@@ -561,8 +566,8 @@ defmodule Cldr.PersonName do
             other -> {:halt, other}
           end
 
-        {:name_order, name_order}, acc when name_order in @valid_name_order ->
-          {:cont, Map.put(acc, :name_order, name_order)}
+        {:preferred_order, preferred_order}, acc when preferred_order in @valid_name_order ->
+          {:cont, Map.put(acc, :preferred_order, preferred_order)}
 
         {:backend, _backend}, acc ->
           {:cont, acc}

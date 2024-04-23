@@ -99,6 +99,7 @@ The `t:Cldr.PersonName.t/0` struct is composed of one or more name parts:
 * `given_name` - usually a name given to someone that is not passed to a person by way of parentage.
 * `informal_given_name` - usually either a nickname or a shortened form of the given name that is used to address a person informally.
 * `other_given_names` - name or names that may appear between the first given name string and the surname. In the West, this may be a middle name, in Slavic regions it may be a patronymic name, and in parts of the Middle East, it may be the nasab (نسب) or series of patronymics.
+* `surname_prefix` - In some languages the surname may have a prefix that needs to be treated differently, for example “van den Berg”.
 * `surname` - usually the family name passed to a person that indicates their family, tribe, or community. In most Western languages, this is known as the last name.
 * `other_surnames` - in some cultures, both the parent’s surnames are used and need to be handled separately for formatting in different contexts.
 * `generation` - a string that represents a generation marker, such as “Jr.” or “III”.
