@@ -14,11 +14,19 @@ defmodule Cldr.PersonName.Formatter do
 
   @format_options [:format, :usage, :order, :formality, :locale]
 
+  @typedoc "Valid :format option"
   @type format :: unquote(type_from_list.(@format))
+
+  @typedoc "Valid :name_order option"
   @type name_order :: unquote(type_from_list.(@preferred_order))
+
+  @typedoc "Valid :usage option"
   @type usage  :: unquote(type_from_list.(@usage))
+
+  @typedoc "Valid :formality option"
   @type formality :: unquote(type_from_list.(@formality))
 
+  @typedoc "Valid options for Cldr.PersonName.to_string/2"
   @type format_option ::
     {:format, format()}
     | {:backend, module()}
@@ -27,6 +35,7 @@ defmodule Cldr.PersonName.Formatter do
     | {:formality, formality()}
     | {:locale, Cldr.Locale.locale_reference()}
 
+  @typedoc "Cldr.PersonName.to_string/2 options list"
   @type format_options :: list(format_option())
 
   # These languages will have a different String.upcase/1 treatment than the default.
@@ -48,6 +57,7 @@ defmodule Cldr.PersonName.Formatter do
     [:given_first, :surname_first, :sorting]
   end
 
+  @doc false
   def to_iodata(name, formatting_locale, backend, options) do
     with {:ok, name_locale} <- derive_name_locale(name, formatting_locale),
          {:ok, formats} <-formats(formatting_locale, name_locale, backend),
@@ -749,6 +759,7 @@ defmodule Cldr.PersonName.Formatter do
     likely_locale && Cldr.Locale.canonical_language_tag(likely_locale, backend)
   end
 
+  @doc false
   def formats(formatting_locale, _name_locale, backend) do
     # IO.inspect formatting_locale, label: "Formatting locale"
     backend = Module.concat(backend, PersonName)
