@@ -1,37 +1,35 @@
 defmodule Cldr.PersonName do
-  @moduledoc """
-  Cldr module to formats person names.
-
-  """
+  @readme Path.expand("README.md")
+  @moduledoc @readme |> File.read!() |> String.split("<!-- Split --->") |> List.last() |> String.trim()
 
   import Kernel, except: [to_string: 1]
   alias Cldr.PersonName.Formatter
 
-  @doc "Return the title as a string or nil for the given struct"
+  @doc "Return the title as a `t:String.t/0` or `nil` for the given struct"
   @callback title(name :: struct()) :: String.t() | nil
 
   @doc "Return the given name as a stringor nil for the given struct"
   @callback given_name(name :: struct()) :: String.t() | nil
 
-  @doc "Return the informal given name as a string or nil for the given struct"
+  @doc "Return the informal given name as a `t:String.t/0` or `nil` for the given struct"
   @callback informal_given_name(name :: struct()) :: String.t() | nil
 
-  @doc "Return the other given names as a string or nil for the given struct"
+  @doc "Return the other given names as a `t:String.t/0` or `nil` for the given struct"
   @callback other_given_names(name :: struct()) :: String.t() | nil
 
-  @doc "Return the surname prefix as a string or nil for the given struct"
+  @doc "Return the surname prefix as a `t:String.t/0` or `nil` for the given struct"
   @callback surname_prefix(name :: struct()) :: String.t() | nil
 
-  @doc "Return the surname as a string or nil for the given struct"
+  @doc "Return the surname as a `t:String.t/0` or `nil` for the given struct"
   @callback surname(name :: struct()) :: String.t() | nil
 
-  @doc "Return the other surnames as a string or nil for the given struct"
+  @doc "Return the other surnames as a `t:String.t/0` or `nil` for the given struct"
   @callback other_surnames(name :: struct()) :: String.t() | nil
 
-  @doc "Return the generation as a string or nil for the given struct"
+  @doc "Return the generation as a `t:String.t/0` or `nil` for the given struct"
   @callback generation(name :: struct()) :: String.t() | nil
 
-  @doc "Return the credentials as a string or nil for the given struct"
+  @doc "Return the credentials as a `t:String.t/0` or `nil` for the given struct"
   @callback credentials(name :: struct()) :: String.t() | nil
 
   @doc "Return the locale reference or nil for the given struct"
@@ -77,15 +75,163 @@ defmodule Cldr.PersonName do
     locale: Cldr.Locale.locale_reference()
   }
 
+  @typedoc "Standard error response"
   @type error_message() :: String.t() | {module(), String.t()}
 
-  @spec new(options :: Keyword.t()) :: {:ok, t()} | {:error, error_message()}
-  def new(options \\ []) do
-    with {:ok, validated} <- validate_name(options) do
-      {:ok, struct(__MODULE__, validated)}
-    end
+  @doc """
+  Returns a `t:Cldr.PersonName.t/0` struct crafted
+  from a keyword list of attributes.
+
+  ### Arguments
+
+  * `attributes` is a keyword list of person name
+    attributes that is used to contruct a `t:Cldr.PersonName.t/0`.
+
+  ### Attributes
+
+  * `:given_name` is a persons given name. This is a required
+    attribute. The value is any `t:String.t/0`
+
+  * `:title` is a person's title such as "Mr," or "Dr.".
+
+  * `:other_given_names` is any `t:String.t/0` or `nil`. The
+    default is `nil`.
+
+  * `:informal_given_name` is any `t:String.t/0` or `nil`. The
+    default is `nil`.
+
+  * `:surname` is any `t:String.t/0` or `nil`. The
+    default is `nil`.
+
+  * `:other_surnames` is any `t:String.t/0` or `nil`. The
+    default is `nil`.
+
+  * `:generation` is any `t:String.t/0` or `nil`. The
+    default is `nil`.
+
+  * `:credentials` is any `t:String.t/0` or `nil`. The
+    default is `nil`.
+
+  * `:locale` is any `t:Cldr.LanguageTag.t/0` or nil. The
+    default is `nil`.
+
+  * `:backend` is any `Cldr` backend. That is, any module that
+    contains `use Cldr`. This is used to validate the `:locale`
+    only. The default is `Cldr.default_backend!/0`.
+
+  * `:name_order` is one of `:given_name`, `:last_name` or
+    `:sorting`. The default is `nil`, meaning that the name order
+    is derived from the name's locale and the formatting locale.
+
+  ### Returns
+
+  * `{:ok, person_name_struct}` or
+
+  * `{:error, reason}`
+
+  ### Examples
+
+        iex> Cldr.PersonName.new(title: "Mr.", given_name: "José", surname: "Valim", credentials: "Ph.D.", locale: "pt")
+        {:ok,
+         %Cldr.PersonName{
+           title: "Mr.",
+           given_name: "José",
+           other_given_names: nil,
+           informal_given_name: nil,
+           surname_prefix: nil,
+           surname: "Valim",
+           other_surnames: nil,
+           generation: nil,
+           credentials: "Ph.D.",
+           preferred_order: nil,
+           locale: AllBackend.Cldr.Locale.new!("pt")
+         }}
+
+        iex> Cldr.PersonName.new(surname: "Valim")
+        {:error, "Person Name requires at least a :given_name"}
+
+  """
+
+  @spec new(attributes :: Keyword.t()) :: {:ok, t()} | {:error, error_message()}
+  def new(attributes \\ []) do
+    validate_name(attributes)
   end
 
+  @doc """
+  Returns a formatted person name as an
+  `:erlang.iodata` term.
+
+  ### Arguments
+
+  * `person_name` is any struct that implements the
+    `Cldr.PersonName` behaviour, including the native
+    `t:Cldr.PersonName.t/0` struct.
+
+  * `options` is a keyword list of options.
+
+  ### Options
+
+  * `:format` is the relative length of a formatted name
+    depending on context. For example, a long formal
+    name in English might include `:title`, `:given_name`,
+    `:other_given_names`, `:surname` plus `:generation` and
+    `:credentials`; whereas a short informal name may only be
+    the `:given_name`. The valid values are `:short`, `:medium`
+    and `:long`. The default is derived from the formatting
+    locales preferences.
+
+  * `:usage` indicates if the formatted name is being used
+    to address someone, refer to someone, or present their
+    name in an abbreviated form. The valid values are`:referring`,
+    `:addressing` or `:monogram`. The default is `:referring`. The pattern
+    for `:referring` may be the same as the pattern for
+    `:addressing`.
+
+  * `:formality` indicates the formality of usage. A name on a
+    badge for an informal gathering may be much different
+    from an award announcement at the Nobel Prize Ceremonies. The
+    valid values are `:formal` and `:informal`. Note that the
+    formats may be the same for different formality scenarios
+    depending on the length, usage, and cultural conventions
+    for the locale. For example short formal and short
+    informal may both be just the given name. The default is
+    derived from the formatting locale preferences.
+
+  * `:order` is used express preference for the orders of attributes
+    in the formatted string. The valid values are `:given_first`,
+    `:surname_first` and `:sorting`. The default is based on features
+    of the person name struct and the formatting locale. The
+    option `:sorting` is only every defined as an option - not the
+    person name or locale data.
+
+  ### Notes
+
+  The formats may be the same for different lengths
+  depending on the formality, usage, and cultural conventions
+  for the locale.
+
+  For example, medium and short may be the same for a
+  particular context.
+
+  ### Returns
+
+  * `{:ok, formatted_name}` or
+
+  * `{:error, reason}`.
+
+  ### Examples
+
+      iex> {:ok, jose} = Cldr.PersonName.new(title: "Mr.", given_name: "José", surname: "Valim", credentials: "Ph.D.", locale: "pt")
+      iex> Cldr.PersonName.to_string(jose)
+      {:ok, "José"}
+      iex> Cldr.PersonName.to_string(jose, format: :long)
+      {:ok, "José"}
+      iex> Cldr.PersonName.to_string(jose, format: :long, formality: :formal)
+      {:ok, "Mr. Valim"}
+      iex> Cldr.PersonName.to_string(jose, format: :long, formality: :formal, usage: :referring)
+      {:ok, "Mr. José Valim Ph.D."}
+
+  """
   @spec to_string(name :: struct(), options :: Formatter.format_options()) ::
     {:ok, String.t()} | {:error, error_message()}
 
@@ -95,7 +241,83 @@ defmodule Cldr.PersonName do
     end
   end
 
-  @spec to_string(name :: struct(), options :: Formatter.format_options()) ::
+  @doc """
+  Returns a formatted person name as an
+  `:erlang.iodata` term.
+
+  ### Arguments
+
+  * `person_name` is any struct that implements the
+    `Cldr.PersonName` behaviour, including the native
+    `t:Cldr.PersonName.t/0` struct.
+
+  * `options` is a keyword list of options.
+
+  ### Options
+
+  * `:format` is the relative length of a formatted name
+    depending on context. For example, a long formal
+    name in English might include `:title`, `:given_name`,
+    `:other_given_names`, `:surname` plus `:generation` and
+    `:credentials`; whereas a short informal name may only be
+    the `:given_name`. The valid values are `:short`, `:medium`
+    and `:long`. The default is derived from the formatting
+    locales preferences.
+
+  * `:usage` indicates if the formatted name is being used
+    to address someone, refer to someone, or present their
+    name in an abbreviated form. The valid values are`:referring`,
+    `:addressing` or `:monogram`. The default is `:referring`. The pattern
+    for `:referring` may be the same as the pattern for
+    `:addressing`.
+
+  * `:formality` indicates the formality of usage. A name on a
+    badge for an informal gathering may be much different
+    from an award announcement at the Nobel Prize Ceremonies. The
+    valid values are `:formal` and `:informal`. Note that the
+    formats may be the same for different formality scenarios
+    depending on the length, usage, and cultural conventions
+    for the locale. For example short formal and short
+    informal may both be just the given name. The default is
+    derived from the formatting locale preferences.
+
+  * `:order` is used express preference for the orders of attributes
+    in the formatted string. The valid values are `:given_first`,
+    `:surname_first` and `:sorting`. The default is based on features
+    of the person name struct and the formatting locale. The
+    option `:sorting` is only every defined as an option - not the
+    person name or locale data.
+
+  ### Notes
+
+  The formats may be the same for different lengths
+  depending on the formality, usage, and cultural conventions
+  for the locale.
+
+  For example, medium and short may be the same for a
+  particular context.
+
+  ### Returns
+
+  * `{:ok, formatted_name}` or
+
+  * `{:error, reason}`.
+
+  ### Examples
+
+      iex> {:ok, jose} = Cldr.PersonName.new(title: "Mr.", given_name: "José", surname: "Valim", credentials: "Ph.D.", locale: "pt")
+      iex> Cldr.PersonName.to_string!(jose)
+      "José"
+      iex> Cldr.PersonName.to_string!(jose, format: :long)
+      "José"
+      iex> Cldr.PersonName.to_string!(jose, format: :long, formality: :formal)
+      "Mr. Valim"
+      iex> Cldr.PersonName.to_string!(jose, format: :long, formality: :formal, usage: :referring)
+      "Mr. José Valim Ph.D."
+
+  """
+
+  @spec to_string!(name :: struct(), options :: Formatter.format_options()) ::
     String.t() | no_return()
 
   def to_string!(name, options \\ []) when is_struct(name) do
@@ -105,24 +327,99 @@ defmodule Cldr.PersonName do
     end
   end
 
-  @spec to_iodata(name :: struct(), options :: Formatter.format_options()) ::
+  @doc """
+  Returns a formatted person name as an
+  `:erlang.iodata` term.
+
+  ### Arguments
+
+  * `person_name` is any struct that implements the
+    `Cldr.PersonName` behaviour, including the native
+    `t:Cldr.PersonName.t/0` struct.
+
+  * `options` is a keyword list of options.
+
+  ### Options
+
+  * `:format` is the relative length of a formatted name
+    depending on context. For example, a long formal
+    name in English might include `:title`, `:given_name`,
+    `:other_given_names`, `:surname` plus `:generation` and
+    `:credentials`; whereas a short informal name may only be
+    the `:given_name`. The valid values are `:short`, `:medium`
+    and `:long`. The default is derived from the formatting
+    locales preferences.
+
+  * `:usage` indicates if the formatted name is being used
+    to address someone, refer to someone, or present their
+    name in an abbreviated form. The valid values are`:referring`,
+    `:addressing` or `:monogram`. The default is `:referring`. The pattern
+    for `:referring` may be the same as the pattern for
+    `:addressing`.
+
+  * `:formality` indicates the formality of usage. A name on a
+    badge for an informal gathering may be much different
+    from an award announcement at the Nobel Prize Ceremonies. The
+    valid values are `:formal` and `:informal`. Note that the
+    formats may be the same for different formality scenarios
+    depending on the length, usage, and cultural conventions
+    for the locale. For example short formal and short
+    informal may both be just the given name. The default is
+    derived from the formatting locale preferences.
+
+  * `:order` is used express preference for the orders of attributes
+    in the formatted string. The valid values are `:given_first`,
+    `:surname_first` and `:sorting`. The default is based on features
+    of the person name struct and the formatting locale. The
+    option `:sorting` is only every defined as an option - not the
+    person name or locale data.
+
+  ### Notes
+
+  The formats may be the same for different lengths
+  depending on the formality, usage, and cultural conventions
+  for the locale.
+
+  For example, medium and short may be the same for a
+  particular context.
+
+  ### Returns
+
+  * `{:ok, formatted_name_as_iodata}` or
+
+  * `{:error, reason}`.
+
+  ### Examples
+
+      iex> {:ok, jose} = Cldr.PersonName.new(title: "Mr.", given_name: "José", surname: "Valim", credentials: "Ph.D.", locale: "pt")
+      iex> Cldr.PersonName.to_iodata(jose)
+      {:ok, ["José"]}
+      iex> Cldr.PersonName.to_iodata(jose, format: :long)
+      {:ok, ["José"]}
+      iex> Cldr.PersonName.to_iodata(jose, format: :long, formality: :formal)
+      {:ok, ["Mr.", " ", "Valim"]}
+      iex> Cldr.PersonName.to_iodata(jose, format: :long, formality: :formal, usage: :referring)
+      {:ok, ["Mr.", " ", "José", " ", "Valim", " ", "Ph.D."]}
+
+  """
+
+  @spec to_iodata(person_name :: struct(), options :: Formatter.format_options()) ::
     {:ok, :erlang.iodata()} | {:error, error_message()}
 
-  def to_iodata(name, options \\ []) when is_struct(name) do
+  def to_iodata(person_name, options \\ []) when is_struct(person_name) do
     {locale, backend} = Cldr.locale_and_backend_from(options)
 
-    with {:ok, name} <- maybe_cast_name(name),
-         {:ok, name} <- validate_name(name),
+    with {:ok, person_name} <- maybe_cast_name(person_name),
          {:ok, formatting_locale} <- Cldr.validate_locale(locale, backend) do
-      Formatter.to_iodata(name, formatting_locale, backend, options)
+      Formatter.to_iodata(person_name, formatting_locale, backend, options)
     end
   end
 
-  @spec to_iodata!(name :: struct(), options :: Formatter.format_options()) ::
+  @spec to_iodata!(person_name :: struct(), options :: Formatter.format_options()) ::
     :erlang.iodata() | no_return()
 
-  def to_iodata!(name, options \\ []) when is_struct(name) do
-    case to_iodata(name, options) do
+  def to_iodata!(person_name, options \\ []) when is_struct(person_name) do
+    case to_iodata(person_name, options) do
       {:ok, iodata} -> iodata
       {:error, reason} -> raise_error(reason)
     end
@@ -146,6 +443,15 @@ defmodule Cldr.PersonName do
   @doc """
   Casts any struct that implements the `#{inspect __MODULE__}`
   behaviour into a `t:Cldr.PersonName.t/0` struct.
+
+  ### Arguments
+
+  * `struct` is any struct that implements the
+    `#{inspect __MODULE__}` behaviour.
+
+  ### Returns
+
+  * A `t:Cldr.PersonName.t/0` struct.
 
   """
   @spec cast_to_person_name(struct()) :: t()
@@ -233,12 +539,67 @@ defmodule Cldr.PersonName do
   end
 
   # A name needs only a given name to be minimally viable.
-  defp validate_name(%{given_name: given_name} = name) when is_binary(given_name) do
-    {:ok, name}
+  @string_attributes [:title, :given_name, :other_given_names, :surname, :other_surnames, :generation, :credentials]
+  @all_attributes @string_attributes ++ [:locale, :backend, :name_order]
+  @valid_name_order Formatter.valid_name_order()
+
+  defp validate_name(attributes) when is_list(attributes) do
+    validated =
+      Enum.reduce_while attributes, %__MODULE__{}, fn
+        {attribute, value}, acc when attribute in @string_attributes and is_binary(value) ->
+          {:cont, Map.put(acc, attribute, value)}
+
+        {attribute, value}, acc when attribute in @string_attributes and is_nil(value) ->
+          {:cont, Map.put(acc, attribute, value)}
+
+        {:locale, %Cldr.LanguageTag{} = locale}, acc ->
+           {:cont, Map.put(acc, :locale, locale)}
+
+        {:locale, _locale_reference}, acc ->
+          case validate_locale(attributes) do
+            {:ok, locale} -> {:cont, Map.put(acc, :locale, locale)}
+            other -> {:halt, other}
+          end
+
+        {:name_order, name_order}, acc when name_order in @valid_name_order ->
+          {:cont, Map.put(acc, :name_order, name_order)}
+
+        {:backend, _backend}, acc ->
+          {:cont, acc}
+
+        {attribute, _value}, _acc when attribute not in @all_attributes ->
+          {:halt, {:error, "Invalid attribute found: #{inspect attribute}. Valid attributes are #{inspect @all_attributes}"}}
+
+        {attribute, value}, _acc ->
+          {:halt, {:error, "Invalid attribute value found for #{inspect attribute}. Found #{inspect value}"}}
+      end
+
+    case validated do
+      {:error, reason} ->
+        {:error, reason}
+
+      %__MODULE__{} = person_name ->
+        validate_given_name_presence(person_name)
+    end
   end
 
-  defp validate_name(name) do
-    {:error, "Name requires at least a :given_name. Found #{inspect(name)}"}
+  # The contract is that the %__MODULE__{} struct is structurally
+  # sound so we just check there is a `:given_name`.
+  defp validate_name(%{} = person_name) do
+    validate_given_name_presence(person_name)
+  end
+
+  defp validate_locale(options) do
+    {locale, backend} = Cldr.locale_and_backend_from(options)
+    Cldr.validate_locale(locale, backend)
+  end
+
+  defp validate_given_name_presence(%{} = person_name) do
+    if person_name.given_name do
+      {:ok, person_name}
+    else
+      {:error, "Person Name requires at least a :given_name"}
+    end
   end
 
   defp raise_error(reason) when is_binary(reason) do

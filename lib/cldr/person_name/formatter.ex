@@ -1,5 +1,8 @@
 defmodule Cldr.PersonName.Formatter do
-  @moduledoc false
+  @moduledoc """
+  Implements the person name formatting specification.
+
+  """
 
   type_from_list = &Enum.reduce(&1, fn x, acc -> {:|, [], [x, acc]} end)
 
@@ -39,6 +42,11 @@ defmodule Cldr.PersonName.Formatter do
   @format_space " "
 
   defguardp is_initial(term) when is_list(term)
+
+  @doc false
+  def valid_name_order do
+    [:given_first, :surname_first, :sorting]
+  end
 
   def to_iodata(name, formatting_locale, backend, options) do
     with {:ok, name_locale} <- derive_name_locale(name, formatting_locale),
@@ -113,6 +121,7 @@ defmodule Cldr.PersonName.Formatter do
   #     Otherwise the result is A + B, further modified by replacing any sequence of two or more
   #     white space characters by the first whitespace character.
 
+  @doc false
   def interpolate_format(name, locale, elements, formats) do
     elements
     |> Enum.map(&interpolate_element(name, &1, locale, formats))
@@ -127,6 +136,7 @@ defmodule Cldr.PersonName.Formatter do
   # list until we get to a value. Unlike the standard text (but consistent with ICU) a binary
   # before the first populated field is ok.
 
+  @doc false
   def remove_leading_emptiness([{:field, value} | rest]), do: [{:field, value} | rest]
   def remove_leading_emptiness([_first | rest]), do: remove_leading_emptiness(rest)
   def remove_leading_emptiness([]), do: []
@@ -134,6 +144,7 @@ defmodule Cldr.PersonName.Formatter do
   # If one or more fields at the end of the pattern are empty, all fields and literal text after
   # the last populated field are omitted.
 
+  @doc false
   def remove_trailing_emptiness(elements) do
     elements
     |> Enum.reverse()
@@ -141,6 +152,7 @@ defmodule Cldr.PersonName.Formatter do
     |> Enum.reverse()
   end
 
+  @doc false
   def maybe_remove_leading_emptiness(elements) do
     Enum.reduce_while(elements, nil, fn
       # We found an empty element before any populated elements
@@ -183,11 +195,7 @@ defmodule Cldr.PersonName.Formatter do
   #    2. Deletes an unpopulated field (nil) *and* a binary is the binary directly follows
   #       the unpopulated field and the binary is whitespace.
 
-  # def remove_empty_fields([binary_1, nil, binary_2 | rest])
-  #     when is_binary(binary_1) and is_binary(binary_2) do
-  #   remove_empty_fields([binary_1 | rest])
-  # end
-
+  @doc false
   def remove_empty_fields([nil | rest]) do
     case remove_up_to_nil(rest) do
       [] -> remove_empty_fields(rest)
@@ -234,10 +242,12 @@ defmodule Cldr.PersonName.Formatter do
   #     Otherwise the result is A + B, further modified by replacing any sequence of two or more
   #     white space characters by the first whitespace character.
 
+  @doc false
   def combine_binary(first, ""), do: first
   def combine_binary("", second), do: second
   def combine_binary(first, first), do: first
 
+  @doc false
   def combine_binary(first, second) do
     if String.ends_with?(first, second) do
       first
@@ -263,6 +273,7 @@ defmodule Cldr.PersonName.Formatter do
 
   # Replace multiple whitespace with the first
   # whitespace grapheme.
+  @doc false
   def remove_duplicate_whitespace(string) do
     case Regex.named_captures(~r/(?<whitespace>\s+)/u, string) do
       %{"whitespace" => whitespace} ->
@@ -296,6 +307,7 @@ defmodule Cldr.PersonName.Formatter do
   # For the purposes of this algorithm, two base languages are said to match when they are
   # identical, or if both are in {ja, zh, yue}.
 
+  @doc false
   def foreign_or_native_space_replacement(list, name_locale, formatting_locale, formats) do
     replacement = foreign_or_native(name_locale.language, formatting_locale.language, formats)
 
@@ -305,6 +317,7 @@ defmodule Cldr.PersonName.Formatter do
     end)
   end
 
+  @doc false
   def foreign_or_native(name_language, formatting_language, formats) do
     if considered_the_same_language?(name_language, formatting_language) do
       formats.native_space_replacement
@@ -321,6 +334,7 @@ defmodule Cldr.PersonName.Formatter do
     name_language in [:ja, :zh, :yue] && formatting_language in [:ja, :zh, :yue]
   end
 
+  @doc false
   def wrap(term, atom) do
     {atom, term}
   end
@@ -342,6 +356,7 @@ defmodule Cldr.PersonName.Formatter do
   #.  modifiers)
   #   Any request for a given name field (with any modifiers) returns "" (empty string)
 
+  @doc false
   def adjust_for_mononym(%{surname: surname} = name, format) when is_binary(surname) do
     {:ok, name, format}
   end
@@ -681,6 +696,7 @@ defmodule Cldr.PersonName.Formatter do
   #  the following paths. If at least one of them doesn’t inherit their value from root, then the
   #  locale has name formatting data.
 
+  @doc false
   def derive_name_locale(%{locale: %Cldr.LanguageTag{} = name_locale} = name, _formatting_locale) do
     name_script = dominant_script(name)
 
@@ -740,6 +756,7 @@ defmodule Cldr.PersonName.Formatter do
     {:ok, formats}
   end
 
+  @doc false
   def determine_name_order(name, name_locale, backend, options) do
     language = name_locale.language
     backend = Module.concat(backend, PersonName)
@@ -752,6 +769,7 @@ defmodule Cldr.PersonName.Formatter do
     {:ok, Keyword.put(options, :order, order)}
   end
 
+  @doc false
   def select_format(name, formats, options) do
     # IO.inspect formats, label: "Select format"
     keys = [:person_name, options[:order], options[:format], options[:usage], options[:formality]]
@@ -817,6 +835,7 @@ defmodule Cldr.PersonName.Formatter do
   # Return the number fields present (they are a binary) and
   # the number of fields in the format.
 
+  @doc false
   def score(name, format) do
     Enum.reduce(format, {0, 0}, fn
       field, {fields, populated} when is_binary(field) ->
