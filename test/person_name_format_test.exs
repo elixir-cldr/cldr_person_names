@@ -27,15 +27,6 @@ defmodule Cldr.PersonName.FormatTest do
     :zu
   ]
 
-  # These are work in progress
-  # @test_locales [
-  #   :gu, :hi, :hi_Latn, :km, :kn, :kok, :ml, :mr, :my, :ne, :or,
-  #   :pa, :si, :ta, :te, :as,
-  #
-  #   # Data error?
-  #   :es_US
-  # ]
-
   for test <- Cldr.PersonName.TestData.parse_locales(@test_locales),
       test.line in @tests do
     with {:ok, test_locale} <- AllBackend.Cldr.validate_locale(test.locale),
