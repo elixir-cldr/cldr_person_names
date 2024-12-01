@@ -43,7 +43,6 @@ defmodule Cldr.PersonName.Mixfile do
 
       {:unicode, "~> 1.19"},
       {:unicode_string, "~> 1.4"},
-
       {:ex_doc, "~> 0.18", optional: true, runtime: false},
       {:jason, "~> 1.0", optional: true},
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false}

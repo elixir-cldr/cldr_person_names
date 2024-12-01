@@ -42,7 +42,7 @@ defmodule Cldr.PersonName.Names do
         other_given_names: "Hamish",
         surname: "Watson",
         locale: en_aq
-        },
+      },
 
       # name ; given; Käthe
       # name ; surname; Müller
@@ -52,7 +52,7 @@ defmodule Cldr.PersonName.Names do
         given_name: "Käthe",
         surname: "Müller",
         locale: ja_aq
-        },
+      },
 
       # name ; given; Irene
       # name ; surname; Adler
@@ -62,7 +62,7 @@ defmodule Cldr.PersonName.Names do
         given_name: "Irene",
         surname: "Adler",
         locale: en_aq
-        },
+      },
 
       # name ; given; Sinbad
       # name ; locale; ja_AQ
@@ -70,7 +70,7 @@ defmodule Cldr.PersonName.Names do
       sinbad: %PersonName{
         given_name: "Sinbad",
         locale: ja_aq
-        },
+      },
 
       # nativeG
       # name ; given; Zendaya
@@ -79,7 +79,7 @@ defmodule Cldr.PersonName.Names do
       zendaya: %PersonName{
         given_name: "Zendaya",
         locale: en_aq
-        },
+      },
 
       # nativeFull
       # name ; title; M.
@@ -99,7 +99,7 @@ defmodule Cldr.PersonName.Names do
         surname: "Bouchart",
         generation: "fils",
         locale: fr_aq
-        },
+      },
 
       # nativeG
       # name ; given; Adèle
@@ -108,7 +108,7 @@ defmodule Cldr.PersonName.Names do
       adele: %PersonName{
         given_name: "Adèle",
         locale: fr_aq
-        },
+      },
 
       # nativeG
       # name ; given; Iris
@@ -119,7 +119,7 @@ defmodule Cldr.PersonName.Names do
         given_name: "Iris",
         surname: "Falke",
         locale: de
-        },
+      },
 
       # nativeFull
       # name ; title; Dr.
@@ -142,7 +142,7 @@ defmodule Cldr.PersonName.Names do
         generation: "jr.",
         credentials: "MdB",
         locale: de_aq
-        },
+      },
 
       # foreignGS
       # name ; given; Adélaïde
@@ -153,7 +153,7 @@ defmodule Cldr.PersonName.Names do
         given_name: "Adélaïde",
         surname: "Lemaître",
         locale: ko_aq
-        },
+      },
 
       # nativeFull
       # name ; title; Sr.
@@ -174,7 +174,7 @@ defmodule Cldr.PersonName.Names do
         other_surnames: "Pérez",
         generation: "II",
         locale: es_aq
-        },
+      },
 
       # name ; given; Rosa
       # name ; given2; María
@@ -186,7 +186,7 @@ defmodule Cldr.PersonName.Names do
         other_given_names: "María",
         surname: "Ruiz",
         locale: es_aq
-        },
+      },
 
       # name ; given; Maria
       # name ; surname; Silva
@@ -196,7 +196,7 @@ defmodule Cldr.PersonName.Names do
         given_name: "Maria",
         surname: "Silva",
         locale: pt_aq
-        },
+      },
 
       # name ; given; 一郎
       # name ; surname; 安藤
@@ -206,7 +206,7 @@ defmodule Cldr.PersonName.Names do
         given_name: "一郎",
         surname: "安藤",
         locale: ja_aq
-        },
+      },
 
       # name ; given; יונתן
       # name ; given2; חיים
@@ -218,7 +218,7 @@ defmodule Cldr.PersonName.Names do
         other_given_names: "חיים",
         surname: "כהן",
         locale: he_aq
-        },
+      },
 
       # name ; given; 俊年
       # name ; given2; 杰思
@@ -230,7 +230,7 @@ defmodule Cldr.PersonName.Names do
         other_given_names: "杰思",
         surname: "陈",
         locale: zh_aq
-        },
+      },
 
       # name ; title; 先生
       # name ; given; 德威
@@ -250,7 +250,7 @@ defmodule Cldr.PersonName.Names do
         generation: "小",
         credentials: "议员",
         locale: zh_aq
-        },
+      },
 
       # name ; title; 教授
       # name ; given; 艾达·科妮莉亚
@@ -272,7 +272,7 @@ defmodule Cldr.PersonName.Names do
         generation: "小",
         credentials: "博士",
         locale: en_aq
-        },
+      },
 
       # name ; title; Prof. Dr.
       # name ; given; Ada Cornelia
@@ -296,7 +296,7 @@ defmodule Cldr.PersonName.Names do
         generation: "Jr",
         credentials: "MD DDS",
         locale: ja_aq
-        },
+      },
 
       # name ; given; Juan
       # name ; given2; Luis Antonio
@@ -308,7 +308,7 @@ defmodule Cldr.PersonName.Names do
         other_given_names: "Luis Antonio",
         surname: "Rodríguez Ruiz",
         locale: es_mx
-        },
+      },
 
       # name ; title; Sr.
       # name ; given; Marcelo Miguel
@@ -330,7 +330,7 @@ defmodule Cldr.PersonName.Names do
         generation: "Júnior",
         credentials: "Miembro del Parlamento",
         locale: es_mx
-        },
+      },
 
       # name ; given; Lucía
       # name ; surname; García Pérez
@@ -340,7 +340,7 @@ defmodule Cldr.PersonName.Names do
         given_name: "Lucía",
         surname: "García Pérez",
         locale: es_us
-        },
+      },
 
       # name ; given; Jana
       # name ; surname; Nováková
@@ -350,7 +350,7 @@ defmodule Cldr.PersonName.Names do
         given_name: "Jana",
         surname: "Nováková",
         locale: cs_aq
-        },
+      },
 
       # name ; given; Kate
       # name ; surname; Smith
@@ -360,7 +360,7 @@ defmodule Cldr.PersonName.Names do
         given_name: "Kate",
         surname: "Smith",
         locale: ko_aq
-        },
+      },
 
       # name ; title; paní
       # name ; given; Alexandra
@@ -382,7 +382,7 @@ defmodule Cldr.PersonName.Names do
         generation: "st.",
         credentials: "Ph.D.",
         locale: cs_aq
-        },
+      },
 
       # nativeFull
       # name ; title; Bapak
@@ -401,7 +401,7 @@ defmodule Cldr.PersonName.Names do
         surname: "Adinata",
         credentials: "MP",
         locale: id_aq
-        },
+      },
 
       # name ; given; Gal·la
       # name ; surname; Roig
@@ -411,7 +411,7 @@ defmodule Cldr.PersonName.Names do
         given_name: "Gal·la",
         surname: "Roig",
         locale: ca_aq
-        },
+      },
 
       # name ; given; Jacqueline
       # name ; surname; Beauchêne
@@ -421,7 +421,7 @@ defmodule Cldr.PersonName.Names do
         given_name: "Jacqueline",
         surname: "Beauchêne",
         locale: ko_aq
-        },
+      },
 
       # name ; title; Sr.
       # name ; given; Josep Antoni
@@ -443,7 +443,7 @@ defmodule Cldr.PersonName.Names do
         generation: "II",
         credentials: "Excm",
         locale: ca_aq
-        },
+      },
 
       # name ; given; Marie-Agnès
       # name ; given2; Suzanne
@@ -455,7 +455,7 @@ defmodule Cldr.PersonName.Names do
         other_given_names: "Suzanne",
         surname: "Gilot",
         locale: fr_aq
-        },
+      },
 
       # name ; title; Καθ. δρ.
       # name ; given; Άντα Κορνέλια

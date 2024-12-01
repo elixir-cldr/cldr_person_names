@@ -21,19 +21,19 @@ defmodule Cldr.PersonName.Formatter do
   @type name_order :: unquote(type_from_list.(@preferred_order))
 
   @typedoc "Valid :usage option"
-  @type usage  :: unquote(type_from_list.(@usage))
+  @type usage :: unquote(type_from_list.(@usage))
 
   @typedoc "Valid :formality option"
   @type formality :: unquote(type_from_list.(@formality))
 
   @typedoc "Valid options for Cldr.PersonName.to_string/2"
   @type format_option ::
-    {:format, format()}
-    | {:backend, module()}
-    | {:name_order, name_order()}
-    | {:usage, usage()}
-    | {:formality, formality()}
-    | {:locale, Cldr.Locale.locale_reference()}
+          {:format, format()}
+          | {:backend, module()}
+          | {:name_order, name_order()}
+          | {:usage, usage()}
+          | {:formality, formality()}
+          | {:locale, Cldr.Locale.locale_reference()}
 
   @typedoc "Cldr.PersonName.to_string/2 options list"
   @type format_options :: list(format_option())
@@ -60,7 +60,7 @@ defmodule Cldr.PersonName.Formatter do
   @doc false
   def to_iodata(name, formatting_locale, backend, options) do
     with {:ok, name_locale} <- derive_name_locale(name, formatting_locale),
-         {:ok, formats} <-formats(formatting_locale, name_locale, backend),
+         {:ok, formats} <- formats(formatting_locale, name_locale, backend),
          {:ok, options} <- validate_options(formats, options),
          {:ok, options} <- determine_name_order(name, name_locale, backend, options),
          {:ok, format} <- select_format(name, formats, options),
@@ -93,7 +93,7 @@ defmodule Cldr.PersonName.Formatter do
         {:cont, acc}
 
       {option, value}, _acc when option in @format_options ->
-        {:halt, {:error, "Invalid value #{inspect value} for option #{inspect option}"}}
+        {:halt, {:error, "Invalid value #{inspect(value)} for option #{inspect(option)}"}}
 
       {option, _value}, _acc ->
         {:halt, {:error, "Invalid option #{inspect(option)}"}}
@@ -104,7 +104,7 @@ defmodule Cldr.PersonName.Formatter do
     [
       format: formats.length,
       formality: formats.formality,
-      usage: @default_usage,
+      usage: @default_usage
     ]
   end
 
@@ -289,6 +289,7 @@ defmodule Cldr.PersonName.Formatter do
       %{"whitespace" => whitespace} ->
         replacement = String.first(whitespace)
         String.replace(string, ~r/\s+/u, replacement)
+
       nil ->
         string
     end
@@ -363,7 +364,7 @@ defmodule Cldr.PersonName.Formatter do
   # name or only shows an initial for the given name, then:
   #   Construct and use a derived PersonName P2, whereby P2 behaves exactly as P1 except that:
   #   Any request for a surname field (with any modifiers) returns P1's given name (with the same
-  #.  modifiers)
+  # .  modifiers)
   #   Any request for a given name field (with any modifiers) returns "" (empty string)
 
   @doc false
@@ -858,21 +859,28 @@ defmodule Cldr.PersonName.Formatter do
 
   defp filled?([:title | _], %{title: title}),
     do: is_binary(title)
+
   defp filled?([:given2 | _], %{other_given_names: other_given_names}),
     do: is_binary(other_given_names)
+
   defp filled?([:given, :informal | _], name),
     do: is_binary(name.informal_given_name) || is_binary(name.given_name)
+
   defp filled?([:given | _], %{given_name: given_name}),
     do: is_binary(given_name)
+
   defp filled?([:surname, :prefix | _], %{surname_prefix: surname_prefix}),
     do: is_binary(surname_prefix)
+
   defp filled?([:surname | _], %{surname: surname}),
     do: is_binary(surname)
+
   defp filled?([:surname2 | _], %{other_surnames: other_surnames}),
     do: is_binary(other_surnames)
+
   defp filled?([:generation | _], %{generation: generation}),
     do: is_binary(generation)
+
   defp filled?([:credentials | _], %{credentials: credentials}),
     do: is_binary(credentials)
-
 end

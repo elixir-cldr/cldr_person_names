@@ -1,7 +1,11 @@
 defmodule Cldr.PersonName do
   @readme Path.expand("README.md")
   @external_resource @readme
-  @moduledoc @readme |> File.read!() |> String.split("<!-- Split --->") |> List.last() |> String.trim()
+  @moduledoc @readme
+             |> File.read!()
+             |> String.split("<!-- Split --->")
+             |> List.last()
+             |> String.trim()
 
   import Kernel, except: [to_string: 1]
   alias Cldr.PersonName.Formatter
@@ -58,23 +62,23 @@ defmodule Cldr.PersonName do
   @typedoc """
   A PersonName struct containing the fields supported
   for person name formatting.  Any struct that implements
-  the `#{inspect __MODULE__}` behaviour can be converted
+  the `#{inspect(__MODULE__)}` behaviour can be converted
   to this struct by calling `Cldr.PersonName.cast_to_person_name/1`.
 
   """
   @type t :: %__MODULE__{
-    title: String.t() | nil,
-    given_name: String.t() | nil,
-    other_given_names: String.t() | nil,
-    informal_given_name: String.t() | nil,
-    surname_prefix: String.t() | nil,
-    surname: String.t() | nil,
-    other_surnames: String.t() | nil,
-    generation: String.t() | nil,
-    credentials: String.t() | nil,
-    preferred_order: Formatter.name_order() | nil,
-    locale: Cldr.Locale.locale_reference()
-  }
+          title: String.t() | nil,
+          given_name: String.t() | nil,
+          other_given_names: String.t() | nil,
+          informal_given_name: String.t() | nil,
+          surname_prefix: String.t() | nil,
+          surname: String.t() | nil,
+          other_surnames: String.t() | nil,
+          generation: String.t() | nil,
+          credentials: String.t() | nil,
+          preferred_order: Formatter.name_order() | nil,
+          locale: Cldr.Locale.locale_reference()
+        }
 
   @typedoc "Standard error response"
   @type error_message() :: String.t() | {module(), String.t()}
@@ -237,7 +241,7 @@ defmodule Cldr.PersonName do
 
   """
   @spec to_string(name :: struct(), options :: Formatter.format_options()) ::
-    {:ok, String.t()} | {:error, error_message()}
+          {:ok, String.t()} | {:error, error_message()}
 
   def to_string(name, options \\ []) when is_struct(name) do
     with {:ok, iodata} <- to_iodata(name, options) do
@@ -322,7 +326,7 @@ defmodule Cldr.PersonName do
   """
 
   @spec to_string!(name :: struct(), options :: Formatter.format_options()) ::
-    String.t() | no_return()
+          String.t() | no_return()
 
   def to_string!(name, options \\ []) when is_struct(name) do
     case to_string(name, options) do
@@ -408,7 +412,7 @@ defmodule Cldr.PersonName do
   """
 
   @spec to_iodata(person_name :: struct(), options :: Formatter.format_options()) ::
-    {:ok, :erlang.iodata()} | {:error, error_message()}
+          {:ok, :erlang.iodata()} | {:error, error_message()}
 
   def to_iodata(person_name, options \\ []) when is_struct(person_name) do
     {locale, backend} = Cldr.locale_and_backend_from(options)
@@ -420,7 +424,7 @@ defmodule Cldr.PersonName do
   end
 
   @spec to_iodata!(person_name :: struct(), options :: Formatter.format_options()) ::
-    :erlang.iodata() | no_return()
+          :erlang.iodata() | no_return()
 
   def to_iodata!(person_name, options \\ []) when is_struct(person_name) do
     case to_iodata(person_name, options) do
@@ -445,13 +449,13 @@ defmodule Cldr.PersonName do
   end
 
   @doc """
-  Casts any struct that implements the `#{inspect __MODULE__}`
+  Casts any struct that implements the `#{inspect(__MODULE__)}`
   behaviour into a `t:Cldr.PersonName.t/0` struct.
 
   ### Arguments
 
   * `struct` is any struct that implements the
-    `#{inspect __MODULE__}` behaviour.
+    `#{inspect(__MODULE__)}` behaviour.
 
   ### Returns
 
@@ -550,15 +554,15 @@ defmodule Cldr.PersonName do
 
   defp validate_name(attributes) when is_list(attributes) do
     validated =
-      Enum.reduce_while attributes, %__MODULE__{}, fn
+      Enum.reduce_while(attributes, %__MODULE__{}, fn
         {attribute, value}, acc when attribute in @string_attributes and is_binary(value) ->
           {:cont, Map.put(acc, attribute, value)}
 
-        {attribute, nil}, acc when attribute in @all_attributes  ->
+        {attribute, nil}, acc when attribute in @all_attributes ->
           {:cont, Map.put(acc, attribute, nil)}
 
         {:locale, %Cldr.LanguageTag{} = locale}, acc ->
-           {:cont, Map.put(acc, :locale, locale)}
+          {:cont, Map.put(acc, :locale, locale)}
 
         {:locale, _locale_reference}, acc ->
           case validate_locale(attributes) do
@@ -573,11 +577,15 @@ defmodule Cldr.PersonName do
           {:cont, acc}
 
         {attribute, _value}, _acc when attribute not in @all_attributes ->
-          {:halt, {:error, "Invalid attribute found: #{inspect attribute}. Valid attributes are #{inspect @all_attributes}"}}
+          {:halt,
+           {:error,
+            "Invalid attribute found: #{inspect(attribute)}. Valid attributes are #{inspect(@all_attributes)}"}}
 
         {attribute, value}, _acc ->
-          {:halt, {:error, "Invalid attribute value found for #{inspect attribute}. Found #{inspect value}"}}
-      end
+          {:halt,
+           {:error,
+            "Invalid attribute value found for #{inspect(attribute)}. Found #{inspect(value)}"}}
+      end)
 
     case validated do
       {:error, reason} ->

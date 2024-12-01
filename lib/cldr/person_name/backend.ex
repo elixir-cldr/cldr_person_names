@@ -33,7 +33,7 @@ defmodule Cldr.PersonName.Backend do
 
         """
         @spec to_string(name :: Cldr.PersonName.t(), options :: Formatter.format_options()) ::
-          {:ok, binary()} | {:error, Cldr.PersonName.error_message()}
+                {:ok, binary()} | {:error, Cldr.PersonName.error_message()}
 
         def to_string(%PersonName{} = name, options \\ []) do
           case to_iodata(name, options) do
@@ -56,7 +56,7 @@ defmodule Cldr.PersonName.Backend do
 
         """
         @spec to_iodata(name :: Cldr.PersonName.t(), options :: Formatter.format_options()) ::
-          {:ok, :erlang.iodata()} | {:error, Cldr.PersonName.error_message()}
+                {:ok, :erlang.iodata()} | {:error, Cldr.PersonName.error_message()}
 
         def to_iodata(%PersonName{} = name, options \\ []) do
           options = Keyword.put(options, :backend, unquote(backend))
@@ -71,7 +71,7 @@ defmodule Cldr.PersonName.Backend do
 
         """
         @spec to_iodata!(name :: Cldr.PersonName.t(), options :: Formatter.format_options()) ::
-          :erlang.iodata() | no_return()
+                :erlang.iodata() | no_return()
 
         def to_iodata!(list, options \\ []) do
           case to_iodata(list, options) do
@@ -102,17 +102,20 @@ defmodule Cldr.PersonName.Backend do
                   formats
                   |> Enum.sort()
                   |> Enum.map(fn format ->
-                    Enum.map(Regex.split(~r/{.*}/uU, format, trim: true, include_captures: true), fn
-                      "{" <> field ->
-                        field
-                        |> String.trim_trailing("}")
-                        |> String.split("-")
-                        |> Enum.map(&Cldr.String.underscore/1)
-                        |> Enum.map(&String.to_atom/1)
+                    Enum.map(
+                      Regex.split(~r/{.*}/uU, format, trim: true, include_captures: true),
+                      fn
+                        "{" <> field ->
+                          field
+                          |> String.trim_trailing("}")
+                          |> String.split("-")
+                          |> Enum.map(&Cldr.String.underscore/1)
+                          |> Enum.map(&String.to_atom/1)
 
-                      literal ->
-                        literal
-                    end)
+                        literal ->
+                          literal
+                      end
+                    )
                   end)
                   |> Enum.with_index()
                   |> Enum.map(fn {k, v} -> {v, k} end)
