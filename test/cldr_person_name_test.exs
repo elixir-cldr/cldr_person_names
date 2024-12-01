@@ -13,7 +13,8 @@ defmodule Cldr.PersonName.Test do
   describe "to_string/1" do
     test "works" do
       {:ok, %Cldr.PersonName{} = name} = Cldr.PersonName.new(given_name: "James")
-      assert is_binary(Cldr.PersonName.to_string(name))
+      assert {:ok, name_string} = Cldr.PersonName.to_string(name)
+      assert is_binary(name_string)
     end
   end
 end
