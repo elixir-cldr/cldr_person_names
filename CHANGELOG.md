@@ -1,5 +1,13 @@
 # Changelog
 
+## Cldr Person Names v0.2.1
+
+This is the changelog for `ex_cldr_person_names` v0.2.1 released on December 8th, 2024.  For older changelogs please consult the release tag on [GitHub](https://github.com/elixir-cldr/cldr_person_names/tags)
+
+### Bug Fixes
+
+* Fixes `Cldr.PersonName.Formatter.derive_name_locale/2`. Thanks to @peaceful-james for the PR. Closes #1.
+
 ## Cldr Person Names v0.2.0
 
 This is the changelog for `ex_cldr_person_names` v0.2.0 released on April 24th, 2023.  For older changelogs please consult the release tag on [GitHub](https://github.com/elixir-cldr/cldr_person_names/tags)

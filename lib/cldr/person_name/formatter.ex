@@ -722,12 +722,10 @@ defmodule Cldr.PersonName.Formatter do
 
   def derive_name_locale(%{locale: nil} = name, formatting_locale) do
     name_script = dominant_script(name)
-    name_locale = find_likely_locale_for_script(name_script, formatting_locale.backend)
 
-    if name_locale do
-      {:ok, name_locale}
-    else
-      {:error, "No locale resolved for script #{inspect(name_script)}"}
+    case find_likely_locale_for_script(name_script, formatting_locale.backend) do
+      {:ok, name_locale} when not is_nil(name_locale) -> {:ok, name_locale}
+      _ -> {:error, "No locale resolved for script #{inspect(name_script)}"}
     end
   end
 
