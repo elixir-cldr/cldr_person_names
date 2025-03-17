@@ -37,7 +37,8 @@ defmodule MyApp.Cldr do
       "lo",
       "my",
       "ca",
-      "el"
+      "el",
+      "pcm"
     ],
     providers: [Cldr.PersonName]
 end

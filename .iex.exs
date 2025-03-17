@@ -470,3 +470,29 @@ cornelia = %PersonName{
   credentials: "Δρ.Ι. Δρ.Χ.Ο",
   locale: ja_aq
 }
+
+# foreignFull
+# name ; title; Prọf. Dọk.
+# name ; given; Adá Cornelia
+# name ; given-informal; Néele
+# name ; given2; Ẹ́va Sophia
+# name ; surname-prefix; ván den
+# name ; surname-core; Wólf
+# name ; surname2; Bécker Schmidt
+# name ; generation; jẹnereṣọn
+# name ; credentials; M.D. PhD.
+# name ; locale; ko_AQ
+
+cornelia2 = %PersonName{
+  title: "Prọf. Dọk.",
+  given_name: "Adá Cornelia",
+  informal_given_name: "Néele",
+  other_given_names: "Ẹ́va Sophia",
+  surname_prefix: "ván den",
+  surname: "Wólf",
+  other_surnames: "Bécker Schmidt",
+  generation: "jẹnereṣọn",
+  credentials: "M.D. PhD.",
+  locale: ko_aq
+}
+

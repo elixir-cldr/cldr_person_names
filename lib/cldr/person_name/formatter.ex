@@ -446,7 +446,7 @@ defmodule Cldr.PersonName.Formatter do
   defp interpolate_element(name, [:surname, :monogram | transforms], locale, formats) do
     complete_surname = format_surname(name, locale, transforms, formats)
 
-    if complete_surname == [] do
+    if Enum.empty?(complete_surname) do
       nil
     else
       complete_surname
@@ -462,7 +462,7 @@ defmodule Cldr.PersonName.Formatter do
       |> format_surname(locale, transforms, formats)
       |> Enum.intersperse(@format_space)
 
-    if complete_surname == [] do
+    if Enum.empty?(complete_surname) do
       nil
     else
       complete_surname
@@ -566,8 +566,8 @@ defmodule Cldr.PersonName.Formatter do
     |> :erlang.iolist_to_binary()
   end
 
-  # Starts with a letter, then letter or punctuation
-  @word_or_punctuation Unicode.Regex.compile!("^\\p{L}[\\p{L}\\p{P}]*$")
+  # Starts with a letter, then letter or punctuation or a extended character
+  @word_or_punctuation Unicode.Regex.compile!("^\\p{L}[\\p{L}\\p{P}\\p{word_break=extend}]*$")
 
   # If we aren't retaining punctuation, then we discard
   # any punctuation.
@@ -738,17 +738,14 @@ defmodule Cldr.PersonName.Formatter do
   def derive_formatting_locale(name, formatting_locale, name_locale) do
     cond do
       considered_the_same_script?(formatting_locale.script, name_locale.script) ->
-        # IO.inspect formatting_locale, label: "Formatting locale"
         {:ok, formatting_locale}
 
       dominant_script(name) == name_locale.script ->
-        # IO.inspect name_locale, label: "Name locale"
         {:ok, name_locale}
 
       true ->
         name_script = dominant_script(name)
         find_likely_locale(name_script, name_locale.territory, formatting_locale.backend)
-        # |> IO.inspect(label: "Derived locale")
     end
   end
 
@@ -788,7 +785,6 @@ defmodule Cldr.PersonName.Formatter do
 
   @doc false
   def formats(formatting_locale, backend) do
-    # IO.inspect formatting_locale, label: "Formatting locale"
     backend = Module.concat(backend, PersonName)
     formats = backend.formats_for(formatting_locale) || backend.formats_for(:und)
     {:ok, formats}
@@ -809,7 +805,6 @@ defmodule Cldr.PersonName.Formatter do
 
   @doc false
   def select_format(name, formats, options) do
-    # IO.inspect formats, label: "Select format"
     keys = [:person_name, options[:order], options[:format], options[:usage], options[:formality]]
 
     case get_in(formats, keys) do
@@ -818,7 +813,6 @@ defmodule Cldr.PersonName.Formatter do
 
       format_list ->
         format = choose_format(name, format_list)
-        # IO.inspect format, label: "Selected format"
         {:ok, format}
     end
   end
@@ -864,7 +858,6 @@ defmodule Cldr.PersonName.Formatter do
         [{-populated, unpopulated, priority, format} | acc]
       end)
       |> Enum.sort(:asc)
-      # |> IO.inspect(label: "Scored formats")
       |> hd()
 
     format
