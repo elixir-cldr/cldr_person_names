@@ -60,7 +60,8 @@ defmodule Cldr.PersonName.Formatter do
   @doc false
   def to_iodata(name, formatting_locale, backend, options) do
     with {:ok, name_locale} <- derive_name_locale(name, formatting_locale),
-         {:ok, formats} <-formats(formatting_locale, name_locale, backend),
+         # {:ok, formatting_locale} <- derive_formatting_locale(name, formatting_locale, name_locale),
+         {:ok, formats} <-formats(formatting_locale, backend),
          {:ok, options} <- validate_options(formats, options),
          {:ok, options} <- determine_name_order(name, name_locale, backend, options),
          {:ok, format} <- select_format(name, formats, options),
@@ -342,6 +343,15 @@ defmodule Cldr.PersonName.Formatter do
 
   defp considered_the_same_language?(name_language, formatting_language) do
     name_language in [:ja, :zh, :yue] && formatting_language in [:ja, :zh, :yue]
+  end
+
+  @considered_the_same [:Jpan, :Hani, :Kana, :Hira]
+  defp considered_the_same_script?(name_script, name_script) do
+    true
+  end
+
+  defp considered_the_same_script?(name_script, formatting_script) do
+    name_script in @considered_the_same and formatting_script in @considered_the_same
   end
 
   @doc false
@@ -651,60 +661,22 @@ defmodule Cldr.PersonName.Formatter do
   #
   # Construct the name script in the following way.
   #
-  # Iterate through the characters of the surname, then through the given name.
-  # Find the script of that character using the Script property.
-  # If the script is not Common, Inherited, nor Unknown, return that script as the name script
-  # If nothing is found during the iteration, return Zzzz (Unknown Script)
+  # 1. Iterate through the characters of the surname, then through the given name.
+  #    a. Find the script of that character using the Script property.
+  #    b. If the script is not Common, Inherited, nor Unknown, return that script as the name script
+  # 2. If nothing is found during the iteration, return Zzzz (Unknown Script)
+  #
   # Construct the name base language in the following way.
   #
-  # If the PersonName object can provide a name locale, return its language.
-  # Otherwise, find the maximal likely locale for the name script and return its base language
-  # (first subtag).
+  # 1. If the PersonName object can provide a name locale, return its language.
+  # 2. Otherwise, find the maximal likely locale for the name script and return its base
+  #    language (first subtag).
   #
   # Construct the name locale in the following way:
   #
-  # If the PersonName object can provide a name locale, return a locale formed from it by replacing
-  # its script by the name script.
-  #
-  # Otherwise, return the locale formed from the name base language plus name script.
-  # Construct the name ordering locale in the following way:
-  #
-  # If the PersonName object can provide a name locale, return it.
-  # Otherwise, return the maximal likely locale for “und-” + name script.
-
-  # Derive the formatting locale
-  #
-  #  Let the full formatting locale be the maximal likely locale for the formatter's locale. The
-  #  formatting base language is the base language (first subtag) of the full formatting locale,
-  #  and the formatting script is the script code of the full formatting locale.
-  #
-  #  Switch the formatting locale if necessary
-  #
-  #  A few script values represent a set of scripts, such as Jpan = {Hani, Kana, Hira}. Two script
-  #  codes are said to match when they are either identical, or one represents a set which contains
-  #  the other, or they both represent sets which intersect. For example, Hani and Jpan match,
-  #  because {Hani, Kana, Hira} contains Hani.
-  #
-  #  If the name script doesn't match the formatting script:
-  #
-  #    If the name locale has name formatting data, then set the formatting locale to the name
-  #    locale.
-  #
-  #    Otherwise, set the formatting locale to the maximal likely locale for the the locale formed
-  #    from und, plus the name script plus the region of the nameLocale.
-  #
-  #    For example, when a Hindi (Devanagari) formatter is called upon to format a name object that
-  #    has the locale Ukrainian (Cyrillic):
-  #
-  #    If the name is written with Cyrillic letters, under the covers a Ukrainian (Cyrillic)
-  #    formatter should be instantiated and used to format that name.
-  #
-  #  If the name is written in Greek letters, then under the covers a Greek (Greek-script)
-  #  formatter should be instantiated and used to format.
-  #
-  #  To determine whether there is name formatting data for a locale, get the values for each of
-  #  the following paths. If at least one of them doesn’t inherit their value from root, then the
-  #  locale has name formatting data.
+  # 1. If the PersonName object can provide a name locale, return a locale formed from it by
+  #    replacing its script by the name script.
+  # 2. Otherwise, return the locale formed from the name base language plus name script.
 
   @doc false
   def derive_name_locale(%{locale: %Cldr.LanguageTag{} = name_locale} = name, _formatting_locale) do
@@ -723,9 +695,60 @@ defmodule Cldr.PersonName.Formatter do
   def derive_name_locale(%{locale: nil} = name, formatting_locale) do
     name_script = dominant_script(name)
 
-    case find_likely_locale_for_script(name_script, formatting_locale.backend) do
+    case find_likely_locale(name_script, formatting_locale.backend) do
       {:ok, name_locale} when not is_nil(name_locale) -> {:ok, name_locale}
       _ -> {:error, "No locale resolved for script #{inspect(name_script)}"}
+    end
+  end
+
+  # Derive the formatting locale
+  #
+  #  Let the full formatting locale be the maximal likely locale for the formatter's locale. The
+  #  formatting base language is the base language (first subtag) of the full formatting locale,
+  #  and the formatting script is the script code of the full formatting locale.
+  #
+  #  Switch the formatting locale if necessary
+  #
+  #  A few script values represent a set of scripts, such as Jpan = {Hani, Kana, Hira}. Two script
+  #  codes are said to match when they are either identical, or one represents a set which contains
+  #  the other, or they both represent sets which intersect. For example, Hani and Jpan match,
+  #  because {Hani, Kana, Hira} contains Hani.
+  #
+  #  If the name script doesn't match the formatting script:
+  #
+  #    1. If the name locale has name formatting data, then set the formatting locale to the name
+  #       locale.
+  #
+  #    2. Otherwise, set the formatting locale to the maximal likely locale for the the locale
+  #.      formed from und, plus the name script plus the region of the nameLocale.
+  #
+  #    For example, when a Hindi (Devanagari) formatter is called upon to format a name object that
+  #    has the locale Ukrainian (Cyrillic):
+  #
+  #    *  If the name is written with Cyrillic letters, under the covers a Ukrainian (Cyrillic)
+  #       formatter should be instantiated and used to format that name.
+  #
+  #    *  If the name is written in Greek letters, then under the covers a Greek (Greek-script)
+  #       formatter should be instantiated and used to format.
+  #
+  #  To determine whether there is name formatting data for a locale, get the values for each of
+  #  the following paths. If at least one of them doesn’t inherit their value from root, then the
+  #  locale has name formatting data.
+
+  def derive_formatting_locale(name, formatting_locale, name_locale) do
+    cond do
+      considered_the_same_script?(formatting_locale.script, name_locale.script) ->
+        # IO.inspect formatting_locale, label: "Formatting locale"
+        {:ok, formatting_locale}
+
+      dominant_script(name) == name_locale.script ->
+        # IO.inspect name_locale, label: "Name locale"
+        {:ok, name_locale}
+
+      true ->
+        name_script = dominant_script(name)
+        find_likely_locale(name_script, name_locale.territory, formatting_locale.backend)
+        # |> IO.inspect(label: "Derived locale")
     end
   end
 
@@ -751,14 +774,20 @@ defmodule Cldr.PersonName.Formatter do
     Cldr.Validity.Script.unicode_to_subtag!(name)
   end
 
-  defp find_likely_locale_for_script(script, backend) do
+  defp find_likely_locale(script, backend) do
     root_language = Cldr.Locale.root_language()
     likely_locale = Cldr.Locale.likely_subtags(root_language, script, nil, [])
     likely_locale && Cldr.Locale.canonical_language_tag(likely_locale, backend)
   end
 
+  defp find_likely_locale(script, territory, backend) do
+    root_language = Cldr.Locale.root_language()
+    likely_locale = Cldr.Locale.likely_subtags(root_language, script, territory, [])
+    likely_locale && Cldr.Locale.canonical_language_tag(likely_locale, backend)
+  end
+
   @doc false
-  def formats(formatting_locale, _name_locale, backend) do
+  def formats(formatting_locale, backend) do
     # IO.inspect formatting_locale, label: "Formatting locale"
     backend = Module.concat(backend, PersonName)
     formats = backend.formats_for(formatting_locale) || backend.formats_for(:und)
