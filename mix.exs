@@ -38,7 +38,8 @@ defmodule Cldr.PersonName.Mixfile do
 
   defp deps do
     [
-      {:ex_cldr, "~> 2.41"},
+      {:ex_cldr, path: "../cldr", override: true},
+      # {:ex_cldr, "~> 2.44"},
 
       {:unicode, "~> 1.20"},
       {:unicode_string, "~> 1.6"},

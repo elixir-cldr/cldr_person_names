@@ -496,3 +496,31 @@ cornelia2 = %PersonName{
   locale: ko_aq
 }
 
+sarah = %PersonName{
+    credentials: nil,
+    generation: nil,
+    given_name: "Sarah",
+    informal_given_name: nil,
+    locale: ko_aq,
+    other_given_names: "Anna",
+    other_surnames: nil,
+    preferred_order: nil,
+    surname: "Johnson",
+    surname_prefix: nil,
+    title: nil
+  }
+
+zazilia = %PersonName{
+    credentials: nil,
+    generation: nil,
+    given_name: "Zäzilia",
+    informal_given_name: nil,
+    other_given_names: "Hamish",
+    other_surnames: nil,
+    preferred_order: nil,
+    surname: "Stöber",
+    surname_prefix: nil,
+    title: nil,
+    locale: ko_aq,
+  }
+

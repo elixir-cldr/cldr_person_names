@@ -186,15 +186,16 @@ defmodule Cldr.PersonName.Formatter do
   # Processing from the start of the remaining pattern:
   # https://www.unicode.org/reports/tr35/tr35-personNames.html#process-a-namepattern
   #
-  #   If there are two or more empty fields separated only by literals, the fields and the literals
-  #   between them are removed.
+  #   1. If there are two or more empty fields separated only by literals, the fields and the
+  #      literals between them are removed.
   #
-  #   If there is a single empty field, it is removed.
+  #   2. If there is a single empty field, it is removed.
   #
-  #   If the processing from step 3 results in two adjacent literals (call them A and B), they are
-  #   coalesced into one literal as follows:
+  #   If the processing from the steps above results in two adjacent literals (call them A and B),
+  #   they are coalesced into one literal as follows:
   #
   #     If either is empty the result is the other one.
+  #
   #     If B matches the end of A, then the result is A. So xyz + yz ⇒ xyz, and xyz + xyz ⇒ xyz.
   #     Otherwise the result is A + B, further modified by replacing any sequence of two or more
   #     white space characters by the first whitespace character.
@@ -203,10 +204,15 @@ defmodule Cldr.PersonName.Formatter do
   #  with unpopulated fields (nil).  Based upon the test cases this implementation:
   #
   #    1. Deletes an unpopulated field immediately after a populated field
-  #    2. Deletes an unpopulated field (nil) *and* a binary is the binary directly follows
+  #    2. Deletes an unpopulated field (nil) *and* a binary if the binary directly preceeds
   #       the unpopulated field and the binary is whitespace.
 
   @doc false
+  def remove_empty_fields([literal_1, nil, literal_2 | rest])
+      when is_binary(literal_1) and is_binary(literal_2) do
+    remove_empty_fields([literal_1 | rest])
+  end
+
   def remove_empty_fields([nil | rest]) do
     case remove_up_to_nil(rest) do
       [] -> remove_empty_fields(rest)
@@ -214,13 +220,13 @@ defmodule Cldr.PersonName.Formatter do
     end
   end
 
-  def remove_empty_fields([first | rest]) when is_binary(first) do
+  def remove_empty_fields([literal | rest]) when is_binary(literal) do
     case remove_empty_fields(rest) do
       [binary | rest] when is_binary(binary) ->
-        [combine_binary(first, binary) | rest]
+        [combine_binary(literal, binary) | rest]
 
       other ->
-        [first | other]
+        [literal | other]
     end
   end
 
@@ -264,21 +270,6 @@ defmodule Cldr.PersonName.Formatter do
       first
     else
       remove_duplicate_whitespace(first <> second)
-    end
-    |> bodgy_fix_literal()
-  end
-
-  # FIXME This is here to make some test cases pass until
-  # either the data bug (id, es) is fixed or the spec is updated
-  # or I find more evidence of my idiocy.
-  # See https://unicode-org.atlassian.net/jira/software/c/projects/CLDR/issues/CLDR-17443
-
-  defp bodgy_fix_literal(string) do
-    if Regex.match?(~r/^\s+/u, string) && Regex.match?(~r/\s+$/u, string) do
-      # String.trim_leading(string)
-      @format_space
-    else
-      string
     end
   end
 
@@ -850,17 +841,34 @@ defmodule Cldr.PersonName.Formatter do
   # format.
 
   defp choose_format(name, formats) do
-    {_populated, _unpopulated, _priority, format} =
-      Enum.reduce(formats, [], fn {priority, format}, acc ->
+    {_populated, _unpopulated, _index, format} =
+      Enum.reduce(formats, [], fn {index, format}, acc ->
         {fields, populated} = score(name, format)
         unpopulated = fields - populated
 
-        [{-populated, unpopulated, priority, format} | acc]
+        [{-populated, unpopulated, index, format} | acc]
       end)
-      |> Enum.sort(:asc)
+      |> Enum.sort(&compare_format/2)
       |> hd()
 
     format
+  end
+
+  defp compare_format(a, b) do
+    format_to_term(a) < format_to_term(b)
+  end
+
+  defp format_to_term({populated, unpopulated, _index, format}) do
+    string_format =
+      format
+      |> Enum.map(fn
+        binary when is_binary(binary) -> binary
+        list when is_list(list) -> Enum.map(list, &to_string/1)
+      end)
+      |> List.flatten()
+      |> Enum.join()
+
+    {populated, unpopulated, string_format}
   end
 
   # Return the number fields present (they are a binary) and
@@ -869,7 +877,7 @@ defmodule Cldr.PersonName.Formatter do
   @doc false
   def score(name, format) do
     Enum.reduce(format, {0, 0}, fn
-      field, {fields, populated} when is_binary(field) ->
+      binary, {fields, populated} when is_binary(binary) ->
         {fields, populated}
 
       field, {fields, populated} ->
