@@ -234,7 +234,7 @@ defmodule Cldr.PersonName do
       iex> Cldr.PersonName.to_string(jose, format: :long, formality: :formal)
       {:ok, "Mr. Valim"}
       iex> Cldr.PersonName.to_string(jose, format: :long, formality: :formal, usage: :referring)
-      {:ok, "Mr. José Valim, Ph.D."}
+      {:ok, "Mr. José Valim Ph.D."}
 
   """
   @spec to_string(name :: struct(), options :: Formatter.format_options()) ::
@@ -299,7 +299,7 @@ defmodule Cldr.PersonName do
   depending on the formality, usage, and cultural conventions
   for the locale.
 
-  For example, medium and short may be the same for a
+  For example, `:medium` and `:short` may be the same for a
   particular context.
 
   ### Returns
@@ -310,7 +310,8 @@ defmodule Cldr.PersonName do
 
   ### Examples
 
-      iex> {:ok, jose} = Cldr.PersonName.new(title: "Mr.", given_name: "José", surname: "Valim", credentials: "Ph.D.", locale: "pt")
+      iex> {:ok, jose} = Cldr.PersonName.new(title: "Mr.", given_name: "José", surname: "Valim",
+      ...> credentials: "Ph.D.", locale: "pt")
       iex> Cldr.PersonName.to_string!(jose)
       "José"
       iex> Cldr.PersonName.to_string!(jose, format: :long)
@@ -318,7 +319,7 @@ defmodule Cldr.PersonName do
       iex> Cldr.PersonName.to_string!(jose, format: :long, formality: :formal)
       "Mr. Valim"
       iex> Cldr.PersonName.to_string!(jose, format: :long, formality: :formal, usage: :referring)
-      "Mr. José Valim, Ph.D."
+      "Mr. José Valim Ph.D."
 
   """
 
@@ -404,7 +405,7 @@ defmodule Cldr.PersonName do
       iex> Cldr.PersonName.to_iodata(jose, format: :long, formality: :formal)
       {:ok, ["Mr.", " ", "Valim"]}
       iex> Cldr.PersonName.to_iodata(jose, format: :long, formality: :formal, usage: :referring)
-      {:ok, ["Mr.", " ", "José", " ", "Valim", ", ", "Ph.D."]}
+      {:ok, ["Mr.", " ", "José", " ", "Valim", " ", "Ph.D."]}
 
   """
 
