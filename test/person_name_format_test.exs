@@ -5,16 +5,13 @@ defmodule Cldr.PersonName.FormatTest do
 
   @all_locales Cldr.PersonName.TestData.all_locales()
 
-  # Failing - disagreement between test, spec and implementation
-  # Probably because the formatting locale switches (which we don't
-  # current support).
-
-  # Should revisit the es_* locales though - that might be different bugs than the
-  # "formatting locale switching"
-
   @failing_locales [
-    :kok, :si, :my, :yue_Hans, :ti, :kn, :km, :ml, :yo_BJ, :es_US, :es_MX, :sk, :mr, :es, :cs,
-    :es_419, :gd
+    # Probably failing because the formatting locale switches (which we don't
+    # current support).
+    :kok, :si, :my, :yue_Hans, :ti, :kn, :km, :ml, :yo_BJ, :sk, :mr, :gd,
+
+    # These shoud be investigated further, even with the current implementation
+    :es_US, :es_MX, :es, :cs, :es_419
   ]
 
   @test_locales (@all_locales -- @failing_locales)
