@@ -1,5 +1,14 @@
 # Changelog
 
+## Cldr Person Names v1.1.0
+
+This is the changelog for `ex_cldr_person_names` v1.1.0 released on November 6th, 2025.  For older changelogs please consult the release tag on [GitHub](https://github.com/elixir-cldr/cldr_person_names/tags)
+
+### Enhancements
+
+* Update to [CLDR 48](https://cldr.unicode.org/downloads/cldr-48) data.
+
+
 ## Cldr Person Names v1.0.0
 
 This is the changelog for `ex_cldr_person_names` v1.0.0 released on March 18th, 2025.  For older changelogs please consult the release tag on [GitHub](https://github.com/elixir-cldr/cldr_person_names/tags)
