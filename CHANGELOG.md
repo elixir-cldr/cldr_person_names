@@ -4,7 +4,7 @@
 
 This is the changelog for `ex_cldr_person_names` v1.1.1 released on January 19th, 2026.  For older changelogs please consult the release tag on [GitHub](https://github.com/elixir-cldr/cldr_person_names/tags)
 
-### Enhancements
+### Bug Fixes
 
 * Fix compiler warnings for Elixir 1.20
 
