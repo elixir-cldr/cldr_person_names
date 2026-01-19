@@ -5,11 +5,21 @@ defprotocol Cldr.PersonName.Format do
   @spec to_string(name :: struct(), options :: Formatter.format_options()) ::
     {:ok, String.t()} | {:error, PersonName.error_message()}
 
-  def to_string(name, options \\ [])
+  def to_string(name, options)
+
+  @spec to_string(name :: struct()) ::
+    {:ok, String.t()} | {:error, PersonName.error_message()}
+
+  def to_string(name)
 
   @spec to_string(name :: struct(), options :: Formatter.format_options()) ::
     String.t() | no_return()
 
-  def to_string!(name, options \\ [])
+  def to_string!(name, options)
+
+  @spec to_string(name :: struct()) ::
+    String.t() | no_return()
+
+  def to_string!(name)
 
 end

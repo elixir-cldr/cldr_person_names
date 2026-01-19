@@ -1,7 +1,7 @@
 defmodule Cldr.PersonName.Mixfile do
   use Mix.Project
 
-  @version "1.1.0"
+  @version "1.1.1"
 
   def project do
     [
@@ -38,10 +38,9 @@ defmodule Cldr.PersonName.Mixfile do
 
   defp deps do
     [
-      {:ex_cldr, "~> 2.44"},
+      {:ex_cldr, "~> 2.45"},
 
-      {:unicode, "~> 1.20"},
-      {:unicode_string, "~> 1.6"},
+      {:unicode_string, "~> 1.8"},
 
       {:ex_doc, "~> 0.18", optional: true, runtime: false},
       {:jason, "~> 1.0", optional: true},

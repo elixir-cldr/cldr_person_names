@@ -1,4 +1,4 @@
-require Cldr.PersonName.Backend
+{:module, _} = Code.ensure_compiled(Cldr.PersonName.Backend)
 
 defmodule MyApp.Cldr do
   use Cldr,

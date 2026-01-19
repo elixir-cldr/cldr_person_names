@@ -16,3 +16,6 @@ erl_crash.dump
 /data
 
 .iex.exs
+
+# mise
+mise.toml

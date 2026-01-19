@@ -431,21 +431,6 @@ defmodule Cldr.PersonName do
     end
   end
 
-  defimpl Cldr.PersonName.Format, for: __MODULE__ do
-    @moduledoc """
-    Implements the Cldr.PersonName.Chars protocol for
-    the `t:Cldr.PersonName.t/0` struct.
-
-    """
-    def to_string(name, options) do
-      Cldr.PersonName.to_string(name, options)
-    end
-
-    def to_string!(name, options) do
-      Cldr.PersonName.to_string(name, options)
-    end
-  end
-
   @doc """
   Casts any struct that implements the `#{inspect __MODULE__}`
   behaviour into a `t:Cldr.PersonName.t/0` struct.
